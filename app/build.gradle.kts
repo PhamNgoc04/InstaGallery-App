@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -74,14 +75,32 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
-
     implementation(libs.androidx.hilt.navigation.compose)
+
+    // Navigation
     implementation(libs.androidx.navigation.compose)
 
+    // Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation (libs.logging.interceptor)
+
+    implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.material3)
 
 
 }
 
 kapt {
     correctErrorTypes = true
+}
+
+// ✅ Ép buộc version thư viện serialization để tránh lỗi Kotlin version mismatch
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.6.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.3")
+    }
 }
