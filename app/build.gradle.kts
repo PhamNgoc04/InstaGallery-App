@@ -31,6 +31,7 @@ android {
                 "proguard-rules.pro"
             )
         }
+
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -41,6 +42,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -89,8 +91,6 @@ dependencies {
 
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.material3)
-
-
 }
 
 kapt {

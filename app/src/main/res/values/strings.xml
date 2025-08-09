@@ -18,4 +18,20 @@
     <string name="sign_up">Sign Up</string>
     <string name="alread_have_account">Already have an account? Login\n</string>
 
+    <string name="login_failed_general_error">Đăng nhập thất bại. Vui lòng thử lại.</string>
+    <string name="login_failed_invalid_credentials">Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.</string>
+    <string name="login_failed_network_error">Không có kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.</string>
+    <string name="login_failed_account_locked">Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ.</string>
+    <string name="login_failed_invalid_request">Yêu cầu đăng nhập không hợp lệ. Vui lòng thử lại.</string>
+
+    <string name="sign_up_failed_invalid_data">Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đã nhập.</string>
+    <string name="sign_up_failed_email_exists">Email đã được sử dụng. Vui lòng sử dụng email khác.</string>
+    <string name="sign_up_failed_general_error">Đăng ký thất bại. Vui lòng thử lại.</string>
+    <string name="sign_up_failed_network_error">Không có kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.</string>
+    <string name="sign_up_failed_terms_not_accepted">Bạn cần chấp nhận điều khoản sử dụng để đăng ký.</string>
+    <string name="sign_up_failed_unknown_error">Đã xảy ra lỗi không xác định. Vui lòng thử lại sau.</string>
+    <string name="sign_up_failed_empty_fields">Vui lòng nhập đầy đủ tất cả các trường</string>
+    <string name="sign_up_failed_password_mismatch">Mật khẩu xác nhận không khớp</string>
+
+
 </resources>

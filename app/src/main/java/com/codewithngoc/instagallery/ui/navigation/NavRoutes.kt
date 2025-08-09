@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.codewithngoc.instagallery.ui.features.auth.AuthScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
+import com.codewithngoc.instagallery.ui.features.auth.signup.SignUpScreen
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
@@ -40,7 +41,9 @@ fun AppNavigation(
         }
 
         composable(Screen.SignUp.route) {
-            Text("Màn hình Đăng ký (placeholder)")
+            SignUpScreen(
+                navController = navController
+            )
         }
 
         composable(Screen.Home.route) {

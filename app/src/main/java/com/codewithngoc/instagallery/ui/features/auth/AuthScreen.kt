@@ -1,14 +1,10 @@
 package com.codewithngoc.instagallery.ui.features.auth
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,25 +12,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -42,104 +35,172 @@ import androidx.navigation.compose.rememberNavController
 import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.ui.navigation.Screen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(navController: NavController) {
-    val imageSize = remember {
-        mutableStateOf(IntSize.Zero)
-    }
-    val brush = Brush.verticalGradient(
-        colors = listOf(
-            androidx.compose.ui.graphics.Color.Transparent, androidx.compose.ui.graphics.Color.Black
-        ),
-        startY = imageSize.value.height.toFloat() / 3,
-    )
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(brush = brush)
-        )
-
-        Button(
-            onClick = { /*TODO*/ },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-            modifier = Modifier
-                .align(
-                    Alignment.TopEnd
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {},
+                navigationIcon = {},
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White
                 )
-                .padding(8.dp)
-        ) {
-            Text(text = stringResource(id = R.string.skip))
-        }
-
+            )
+        },
+        containerColor = Color.White
+    ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 110.dp)
-                .padding(16.dp)
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(top = 80.dp, start = 24.dp, end = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Logo và tên ứng dụng
             Text(
-                text = stringResource(id = R.string.welcome),
-                color = Color.Black,
-                modifier = Modifier,
-                fontSize = 50.sp,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                text = "InstaGallery",
+                fontSize = 36.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = colorResource(R.color.orange_button_login),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
+
             Text(
-                text = stringResource(id = R.string.app_name),
-//                color = Orange,
-                modifier = Modifier,
-                fontSize = 50.sp,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-            )
-            Text(
-                text = stringResource(id = R.string.insta_gallery_desc),
-                color = Color.DarkGray,
-                fontSize = 20.sp,
+                text = "Chào mừng bạn đến với InstaGallery,\nnơi bạn có thể lưu giữ những khoảnh khắc đẹp nhất!",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray),
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-//            GroupSocialButtons(onFacebookClick = { /*TODO*/ }) {
-//            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    navController.navigate(Screen.SignUp.route)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.2f)),
-                shape = RoundedCornerShape(32.dp),
-                border = BorderStroke(1.dp, Color.White)
+            // Các nút Đăng ký & Đăng nhập
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 38.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(text = stringResource(id = R.string.email), color = Color.White)
+
+                Button(
+                    onClick = { navController.navigate(Screen.SignUp.route) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.orange_button_login),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(vertical = 14.dp)
+                ) {
+                    Text(
+                        text = "Đăng ký",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = { navController.navigate(Screen.Login.route) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color(0xFFDBDBDB)), // màu xám nhạt như Instagram
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = colorResource(R.color.orange_button_login)
+                    ),
+                    contentPadding = PaddingValues(vertical = 14.dp)
+                ) {
+                    Text(
+                        text = "Đăng nhập",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
-            TextButton(onClick = {
-                navController.navigate(Screen.Login.route)
-            }) {
-                Text(text = stringResource(id = R.string.alread_have_account), color = Color.White)
+            Spacer(modifier = Modifier.height(32.dp))
+
+            SocialSeparator()
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SocialIcon(
+                    iconRes = R.drawable.ic_google,
+                    description = "Google",
+                    onClick = { /* TODO */ }
+                )
+                SocialIcon(
+                    iconRes = R.drawable.ic_fb,
+                    description = "Facebook",
+                    onClick = { /* TODO */ }
+                )
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
+@Composable
+fun SocialSeparator() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Divider(
+            modifier = Modifier.weight(1f),
+            color = Color(0xFFDDDDDD),
+            thickness = 1.dp
+        )
+        Text(
+            text = "  Hoặc  ",
+            style = MaterialTheme.typography.labelLarge.copy(color = Color.Gray),
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        Divider(
+            modifier = Modifier.weight(1f),
+            color = Color(0xFFDDDDDD),
+            thickness = 1.dp
+        )
+    }
+}
 
-@Preview(showBackground = true)
+@Composable
+fun SocialIcon(
+    iconRes: Int,
+    description: String,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(56.dp)
+            .clip(CircleShape),
+        colors = IconButtonDefaults.iconButtonColors(
+            containerColor = Color(0xFFF5F5F5)
+        )
+    ) {
+        Image(
+            painter = painterResource(id = iconRes),
+            contentDescription = description,
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 700)
 @Composable
 fun AuthScreenPreview() {
-    AuthScreen(rememberNavController())
+    MaterialTheme {
+        AuthScreen(rememberNavController())
+    }
 }

@@ -27,7 +27,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.codewithngoc.instagallery.data.InstaGalleryApi
-import com.codewithngoc.instagallery.ui.features.auth.AuthScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
 import com.codewithngoc.instagallery.ui.features.auth.signup.SignUpScreen
 import com.codewithngoc.instagallery.ui.navigation.AppNavigation
@@ -82,7 +81,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+
             InstaGalleryAppTheme {
+
                 AppNavigation()
             }
         }
