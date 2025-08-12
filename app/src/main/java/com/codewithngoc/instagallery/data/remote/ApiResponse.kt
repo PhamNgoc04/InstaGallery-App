@@ -23,7 +23,8 @@ suspend fun <T> safeApiCall(apiCall: suspend () -> Response<T>) : ApiResponse<T>
     return try {
         val res = apiCall.invoke()
         if (res.isSuccessful) {
-            ApiResponse.Success(res.body()!!)
+            res.body()?.let { ApiResponse.Success(it) }
+                ?: ApiResponse.Error(res.code(), "API call successful but returned null body")
         } else {
             ApiResponse.Error(res.code(), res.errorBody()?.string() ?: "Unknown error")
         }

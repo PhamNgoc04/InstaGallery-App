@@ -1,26 +1,32 @@
 package com.codewithngoc.instagallery.ui.features.newpost.editpost
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
@@ -31,131 +37,204 @@ import com.codewithngoc.instagallery.ui.theme.InstaGalleryAppTheme
 @Composable
 fun EditPostScreen(
     navController: NavController,
-    selectedUri: Uri
+    selectedUri: Uri,
+    viewModel: EditPostViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+
+    // Set media 1 lần
+    LaunchedEffect(selectedUri) {
+        viewModel.onMediaSelected(selectedUri)
+    }
+
+    // Lắng nghe sự kiện điều hướng
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                EditPostViewModel.EditPostNavigationEvent.NavigateBackToHome -> {
+                    navController.navigate(Screen.HomeFeed.route) {
+                        popUpTo(Screen.HomeFeed.route) { inclusive = true }
+                    }
+                }
+            }
+        }
+    }
+
+    val uiState by viewModel.uiState.collectAsState()
+    val caption by viewModel.caption.collectAsState()
+
+    // Xử lý Error
+    if (uiState is EditPostViewModel.EditPostEvent.Error) {
+        val message = (uiState as EditPostViewModel.EditPostEvent.Error).message
+        LaunchedEffect(message) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            NewPostTopBar(
+                navController,
+                onShareClick = {
+                    viewModel.uploadAndCreatePost(
+                        context = context,
+                        caption = caption
+                    )
+                }
+            )
+        },
+        bottomBar = {
+            NewPostBottomBar(
+                onShareClick = {
+                    viewModel.uploadAndCreatePost(
+                        context = context,
+                        caption = caption
+                    )
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item {
+                    AsyncImage(
+                        model = selectedUri,
+                        contentDescription = "Selected Image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    OutlinedTextField(
+                        value = caption,
+                        onValueChange = { viewModel.onCaptionChanged(it) },
+                        label = { Text("Thêm chú thích...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    )
+
+                    Divider(color = Color.LightGray, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    NewPostOption(iconRes = R.drawable.ic_music, text = "Thêm âm thanh")
+                    NewPostOption(iconRes = R.drawable.ic_gui, text = "Gắn thẻ người khác")
+                    NewPostOption(iconRes = R.drawable.ic_hienmatkhau, text = "Thêm vị trí")
+                    NewPostOption(iconRes = R.drawable.ic_anmatkhau, text = "Thêm AI", showSwitch = true)
+
+                    Divider(color = Color.LightGray, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    NewPostOption(iconRes = R.drawable.ic_anmatkhau, text = "Đối tượng", trailingText = "Mọi người")
+                    NewPostOption(iconRes = R.drawable.ic_hienmatkhau, text = "Cùng chia sẻ trên...", trailingText = "Đang tắt")
+                    NewPostOption(iconRes = R.drawable.ic_anmatkhau, text = "Lựa chọn khác")
+                }
+            }
+
+            if (uiState is EditPostViewModel.EditPostEvent.Loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NewPostBottomBar(onShareClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
+            .fillMaxWidth()
+            .padding(16.dp)
+            .background(Color.White),
+        contentAlignment = Alignment.Center
     ) {
-        // 1. Hiển thị ảnh đã chọn
-        AsyncImage(
-            model = selectedUri,
-            contentDescription = "Selected Image",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
-
-        // 3. Top bar
-        EditPostTopBar(navController = navController)
-
-        // 4. Toolbar chỉnh sửa ảnh
-        EditPostToolBar(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp) // Offset để không che nút "Tiếp"
-        )
-
-        // 5. Nút "Tiếp"
-        FloatingActionButton(
-            onClick = {
-                navController.navigate(Screen.FinalizePost.createRoute(Uri.encode(selectedUri.toString())))
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 16.dp, end = 16.dp),
-            containerColor = MaterialTheme.colorScheme.primary
+        Button(
+            onClick = onShareClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_dropdown), // Giả định bạn có icon này
-                contentDescription = "Tiếp",
-                modifier = Modifier.size(24.dp)
-            )
+            Text("Chia sẻ", color = Color.White)
         }
     }
 }
 
-// Top Bar của màn hình chỉnh sửa
+// Top Bar của màn hình đăng bài mới
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditPostTopBar(navController: NavController) {
+fun NewPostTopBar(navController: NavController, onShareClick: () -> Unit) {
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                "Bài viết mới",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Quay lại"
+                )
+            }
+        },
+        actions = {
+            TextButton(onClick = onShareClick) {
+                Text(
+                    "Chia sẻ",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+        },
+        modifier = Modifier.background(Color.White)
+    )
+}
+
+// Component cho các tùy chọn trong danh sách
+@Composable
+fun NewPostOption(iconRes: Int, text: String, trailingText: String? = null, showSwitch: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .clickable { /* Xử lý click */ }
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(
-            imageVector = Icons.Default.Close,
-            contentDescription = "Close",
-            tint = Color.White,
-            modifier = Modifier.clickable { navController.popBackStack() }
-        )
-        // Phần Profile/Stories
-        Row(
-            modifier = Modifier
-                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                .padding(vertical = 4.dp, horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_register_logo), // Thay bằng avatar người dùng
-                contentDescription = "Profile Picture",
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Phép màu", color = Color.White, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add",
-                tint = Color.White,
-                modifier = Modifier.padding(start = 8.dp)
+                painter = painterResource(id = iconRes),
+                contentDescription = text,
+                modifier = Modifier.size(24.dp),
+                tint = Color.Black
             )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(text = text, fontSize = 16.sp)
         }
-    }
-}
-
-// Toolbar dưới cùng
-@Composable
-fun EditPostToolBar(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        ToolBarButton(iconRes = R.drawable.ic_music, text = "Nhạc")
-        ToolBarButton(iconRes = R.drawable.ic_text, text = "Văn bản")
-        ToolBarButton(iconRes = R.drawable.ic_overlay, text = "Lớp phủ")
-        ToolBarButton(iconRes = R.drawable.ic_filter, text = "Bộ lọc")
-        ToolBarButton(iconRes = R.drawable.ic_edit, text = "Chỉnh sửa")
-    }
-}
-
-// Nút trong Toolbar
-@Composable
-fun ToolBarButton(iconRes: Int, text: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { /* Handle click */ }
-    ) {
-        Image(
-            painter = painterResource(id = iconRes),
-            contentDescription = text,
-            modifier = Modifier.size(24.dp)
-        )
-        Text(text = text, color = Color.White, fontSize = 12.sp)
+        if (showSwitch) {
+            Switch(checked = false, onCheckedChange = { /* Xử lý switch */ })
+        } else if (trailingText != null) {
+            Text(text = trailingText, color = Color.Gray)
+        }
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun EditPostScreenPreview() {
+fun NewPostScreenPreview() {
     val navController = rememberNavController()
-    // Tạo mock Uri để hiển thị trong Preview
     val mockUri = Uri.parse("https://picsum.photos/id/1018/1080/1920")
     InstaGalleryAppTheme {
         EditPostScreen(navController = navController, selectedUri = mockUri)

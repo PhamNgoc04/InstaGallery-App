@@ -15,8 +15,12 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+// SharedFlow để thông báo khi một bài viết mới được tạo thành công
+val newPostSharedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
 @HiltViewModel
 class HomeFeedViewModel @Inject constructor(
@@ -36,6 +40,17 @@ class HomeFeedViewModel @Inject constructor(
 
     sealed class HomeFeedNavigationEvent {
         data class NavigateToPostDetail(val postId: String) : HomeFeedNavigationEvent()
+    }
+
+
+    init {
+        viewModelScope.launch {
+            newPostSharedFlow.collectLatest {
+                loadAllPosts()
+            }
+        }
+        // ✅ Tải dữ liệu ban đầu
+        loadAllPosts()
     }
 
     fun loadAllPosts() {

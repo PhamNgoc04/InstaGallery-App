@@ -1,6 +1,7 @@
 package com.codewithngoc.instagallery.ui.navigation
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -20,28 +21,22 @@ import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.PostDetailScreen
 import com.codewithngoc.instagallery.ui.features.newpost.NewPostScreen
 import com.codewithngoc.instagallery.ui.features.newpost.editpost.EditPostScreen
-import com.codewithngoc.instagallery.ui.features.newpost.finalpost.FinalizePostScreen
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
     object Login : Screen("login")
     object SignUp : Screen("signup")
     object HomeFeed : Screen("homefeed")
+
     object PostDetail : Screen("postdetail/{postId}") {
         fun createRoute(postId: String) = "postdetail/$postId"
     }
 
-
-    // Test
     object NewPost : Screen("new_post")
     object Profile : Screen("profile")
 
     object EditPost : Screen("edit_post_screen/{encodedUri}") {
         fun createRoute(encodedUri: String) = "edit_post_screen/$encodedUri"
-    }
-
-    object FinalizePost : Screen("finalize_post_screen/{uri}") {
-        fun createRoute(uri: String): String = "finalize_post_screen/$uri"
     }
 
 }
@@ -88,6 +83,7 @@ fun AppNavigation(
         composable(Screen.NewPost.route) {
             NewPostScreen(navController)
         }
+
         composable(
             route = Screen.EditPost.route,
             arguments = listOf(navArgument("encodedUri") { type = NavType.StringType })
@@ -97,20 +93,6 @@ fun AppNavigation(
             val uri = Uri.parse(uriString)
             EditPostScreen(selectedUri = uri, navController = navController)
         }
-
-        composable(
-            route = Screen.FinalizePost.route,
-            arguments = listOf(navArgument("uri") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""
-            val uriString = Uri.decode(encodedUri)
-            val uri = Uri.parse(uriString)
-            FinalizePostScreen(
-                navController = navController,
-                selectedUri = uri
-            )
-        }
-
 
     }
 }

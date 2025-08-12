@@ -48,6 +48,7 @@ fun HomeFeedScreen(
 ) {
     val uiState = viewModel.uiState.collectAsState()
     val posts by viewModel.posts.collectAsState()
+
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collectLatest { event ->
             when (event) {
@@ -59,9 +60,11 @@ fun HomeFeedScreen(
             }
         }
     }
-    LaunchedEffect(Unit) {
-        viewModel.loadAllPosts()
-    }
+
+//    LaunchedEffect(Unit) {
+//        viewModel.loadAllPosts()
+//    }
+
     Scaffold(
         topBar = { HomeInsTopBar() },
         bottomBar = { HomeInsBottomBar(navController = navController) },

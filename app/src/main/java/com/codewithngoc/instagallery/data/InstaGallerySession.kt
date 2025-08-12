@@ -29,11 +29,6 @@ class InstaGallerySession(val context : Context) {
     }
 
     fun getUserId(): String? {
-        sharedPres.getString("userId", null)?.let {
-            return it
-        }
-        return null
+        return sharedPres.getString("userId", null)
     }
-
-
 }
