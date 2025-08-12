@@ -91,6 +91,14 @@ dependencies {
 
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.material3)
+
+    implementation (libs.coil.compose)
+
+    implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
+
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0") // hoặc phiên bản mới hơn
+
+
 }
 
 kapt {

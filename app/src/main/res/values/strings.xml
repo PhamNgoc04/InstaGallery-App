@@ -33,5 +33,17 @@
     <string name="sign_up_failed_empty_fields">Vui lòng nhập đầy đủ tất cả các trường</string>
     <string name="sign_up_failed_password_mismatch">Mật khẩu xác nhận không khớp</string>
 
+    <string name="feed_failed_invalid_request">Yêu cầu không hợp lệ</string>
+    <string name="feed_failed_not_found">Không tìm thấy dữ liệu</string>
+    <string name="feed_failed_general_error">Đã xảy ra lỗi, vui lòng thử lại sau</string>
+    <string name="feed_failed_network_error">Không thể kết nối mạng</string>
+
+    <string name="post_failed_invalid_request">Yêu cầu không hợp lệ.</string>
+    <string name="post_failed_unauthorized">Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn.</string>
+    <string name="post_failed_server_error">Máy chủ gặp sự cố, vui lòng thử lại sau.</string>
+    <string name="post_failed_general_error">Có lỗi xảy ra, vui lòng thử lại.</string>
+    <string name="post_failed_network_error">Lỗi kết nối mạng, vui lòng kiểm tra lại.</string>
+    <string name="post_failed_missing_data">Thiếu dữ liệu, vui lòng nhập đầy đủ thông tin.</string>
+
 
 </resources>

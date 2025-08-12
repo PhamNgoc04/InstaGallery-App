@@ -101,7 +101,7 @@ class SignInViewModel @Inject constructor(
                 is ApiResponse.Success -> {
                     session.storeToken(response.data.token)
                     _uiState.value = SignInEvent.Success
-                    _navigationEvent.emit(SignInNavigationEvent.NavigateToHome)
+                    _navigationEvent.emit(SignInNavigationEvent.NavigateToHomeFeed)
                 }
 
                 is ApiResponse.Error -> {
@@ -131,7 +131,7 @@ class SignInViewModel @Inject constructor(
     // Lớp đại diện cho các sự kiện điều hướng
     sealed class SignInNavigationEvent {
         object NavigateToSignUp : SignInNavigationEvent()
-        object NavigateToHome : SignInNavigationEvent()
+        object NavigateToHomeFeed : SignInNavigationEvent()
     }
 
     // Lớp đại diện cho các trạng thái UI

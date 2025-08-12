@@ -3,6 +3,7 @@ package com.codewithngoc.instagallery.data
 import android.content.Context
 import android.content.SharedPreferences
 
+// Lưu token để xác thực với
 class InstaGallerySession(val context : Context) {
     // Tạo đối tượng SharedPreferences với tên là "insta_gallery_session" để lưu trữ token
     // dưới dạng key-value
@@ -22,5 +23,17 @@ class InstaGallerySession(val context : Context) {
         }
         return null // Nếu không có token thì trả về null
     }
+
+    fun storeUserId(userId: String) {
+        sharedPres.edit().putString("userId", userId).apply()
+    }
+
+    fun getUserId(): String? {
+        sharedPres.getString("userId", null)?.let {
+            return it
+        }
+        return null
+    }
+
 
 }

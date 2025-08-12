@@ -2,6 +2,7 @@ package com.codewithngoc.instagallery.data.remote
 
 import retrofit2.Response
 
+// Lớp sealed đại diện cho các trạng thái API (success, error, exception)
 sealed class ApiResponse<out T> {
     // API thành công (HTTP 200)
     data class Success<out T>(val data: T) : ApiResponse<T>()
@@ -17,6 +18,7 @@ sealed class ApiResponse<out T> {
     data class Exception(val exception: kotlin.Exception) : ApiResponse<Nothing>()
 }
 
+// Hàm mở rộng để xử lý các API
 suspend fun <T> safeApiCall(apiCall: suspend () -> Response<T>) : ApiResponse<T> {
     return try {
         val res = apiCall.invoke()

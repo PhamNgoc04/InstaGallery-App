@@ -105,8 +105,8 @@ fun SignInScreen(
         LaunchedEffect(Unit) {
             viewModel.navigationEvent.collectLatest { event ->
                 when (event) {
-                    is SignInViewModel.SignInNavigationEvent.NavigateToHome -> {
-                        navController.navigate((Screen.Home.route)) {
+                    is SignInViewModel.SignInNavigationEvent.NavigateToHomeFeed -> {
+                        navController.navigate((Screen.HomeFeed.route)) {
                             popUpTo(Screen.Auth.route) {
                                 inclusive = true
                             }

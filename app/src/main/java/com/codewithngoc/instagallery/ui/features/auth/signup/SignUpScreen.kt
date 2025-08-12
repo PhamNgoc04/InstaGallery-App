@@ -83,7 +83,7 @@ fun SignUpScreen(
         viewModel.navigationEvent.collectLatest { event ->
             when (event) {
                 is SignUpViewModel.SignUpNavigationEvent.NavigateToHome -> {
-                    navController.navigate(Screen.Home.route) {
+                    navController.navigate(Screen.HomeFeed.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
                 }
