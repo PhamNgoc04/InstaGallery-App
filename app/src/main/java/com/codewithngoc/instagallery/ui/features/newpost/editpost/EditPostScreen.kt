@@ -31,6 +31,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.codewithngoc.instagallery.R
+import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedViewModel
 import com.codewithngoc.instagallery.ui.navigation.Screen
 import com.codewithngoc.instagallery.ui.theme.InstaGalleryAppTheme
 
@@ -38,7 +39,8 @@ import com.codewithngoc.instagallery.ui.theme.InstaGalleryAppTheme
 fun EditPostScreen(
     navController: NavController,
     selectedUri: Uri,
-    viewModel: EditPostViewModel = hiltViewModel()
+    viewModel: EditPostViewModel = hiltViewModel(),
+    homeFeedViewModel: HomeFeedViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 
@@ -77,8 +79,11 @@ fun EditPostScreen(
                 navController,
                 onShareClick = {
                     viewModel.uploadAndCreatePost(
+                        caption = caption,
+                        imageUri = selectedUri,
                         context = context,
-                        caption = caption
+                        navController = navController,
+                        homeFeedViewModel = homeFeedViewModel
                     )
                 }
             )
@@ -87,8 +92,11 @@ fun EditPostScreen(
             NewPostBottomBar(
                 onShareClick = {
                     viewModel.uploadAndCreatePost(
+                        caption = caption,
+                        imageUri = selectedUri,
                         context = context,
-                        caption = caption
+                        navController = navController,
+                        homeFeedViewModel = homeFeedViewModel
                     )
                 }
             )
@@ -125,13 +133,13 @@ fun EditPostScreen(
                     Divider(color = Color.LightGray, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     NewPostOption(iconRes = R.drawable.ic_music, text = "Thêm âm thanh")
                     NewPostOption(iconRes = R.drawable.ic_gui, text = "Gắn thẻ người khác")
-                    NewPostOption(iconRes = R.drawable.ic_hienmatkhau, text = "Thêm vị trí")
-                    NewPostOption(iconRes = R.drawable.ic_anmatkhau, text = "Thêm AI", showSwitch = true)
+                    NewPostOption(iconRes = R.drawable.ic_location, text = "Thêm vị trí")
+                    NewPostOption(iconRes = R.drawable.ic_ai, text = "Thêm AI", showSwitch = true)
 
                     Divider(color = Color.LightGray, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    NewPostOption(iconRes = R.drawable.ic_anmatkhau, text = "Đối tượng", trailingText = "Mọi người")
-                    NewPostOption(iconRes = R.drawable.ic_hienmatkhau, text = "Cùng chia sẻ trên...", trailingText = "Đang tắt")
-                    NewPostOption(iconRes = R.drawable.ic_anmatkhau, text = "Lựa chọn khác")
+                    NewPostOption(iconRes = R.drawable.ic_object, text = "Đối tượng", trailingText = "Mọi người")
+                    NewPostOption(iconRes = R.drawable.ic_share_on, text = "Cùng chia sẻ trên...", trailingText = "Đang tắt")
+                    NewPostOption(iconRes = R.drawable.ic_more, text = "Lựa chọn khác")
                 }
             }
 
@@ -185,16 +193,6 @@ fun NewPostTopBar(navController: NavController, onShareClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại"
-                )
-            }
-        },
-        actions = {
-            TextButton(onClick = onShareClick) {
-                Text(
-                    "Chia sẻ",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
                 )
             }
         },

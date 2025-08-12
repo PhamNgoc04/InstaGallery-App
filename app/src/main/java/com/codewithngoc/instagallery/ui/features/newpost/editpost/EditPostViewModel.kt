@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.InstaGallerySession
@@ -15,6 +16,8 @@ import com.codewithngoc.instagallery.data.model.PostVisibility
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.remote.safeApiCall
 import com.codewithngoc.instagallery.data.utils.uriToMultipart
+import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedViewModel
+import com.codewithngoc.instagallery.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -69,81 +72,13 @@ class EditPostViewModel @Inject constructor(
         _location.value = newLocation
     }
 
-    fun createPost() {
-        viewModelScope.launch {
-            _uiState.value = EditPostEvent.Loading
-
-            val userId = session.getUserId()
-            val mediaUri = _selectedMediaUri.value
-
-            if (userId == null || mediaUri == null) {
-                _uiState.value = EditPostEvent.Error(
-                    context.getString(R.string.post_failed_missing_data)
-                )
-                return@launch
-            }
-
-            try {
-                // 1️⃣ Upload ảnh
-                val filePart = context.uriToMultipart("file", mediaUri)
-                val uploadResponse = safeApiCall {
-                    instaGalleryApi.uploadFile(filePart)
-                }
-
-                val uploadedUrl = when (uploadResponse) {
-                    is ApiResponse.Success -> uploadResponse.data.url
-                    is ApiResponse.Error -> {
-                        _uiState.value = EditPostEvent.Error(uploadResponse.code.getPostErrorMessage())
-                        return@launch
-                    }
-                    is ApiResponse.Exception -> {
-                        _uiState.value = EditPostEvent.Error(
-                            context.getString(R.string.post_failed_network_error)
-                        )
-                        return@launch
-                    }
-                }
-
-                // 2️⃣ Tạo bài viết mới
-                val createRequest = CreatePostRequest(
-                    caption = _caption.value,
-                    visibility = PostVisibility.PUBLIC,
-                    location = _location.value,
-                    media = listOf(
-                        MediaItem(
-                            mediaFileUrl = uploadedUrl,
-                            mediaType = MediaType.IMAGE,
-                            position = 0
-                        )
-                    )
-                )
-
-                val postResponse = safeApiCall {
-                    instaGalleryApi.createPost(createRequest)
-                }
-
-                when (postResponse) {
-                    is ApiResponse.Success -> {
-                        _uiState.value = EditPostEvent.Success
-                        _navigationEvent.emit(EditPostNavigationEvent.NavigateBackToHome)
-                    }
-                    is ApiResponse.Error -> {
-                        _uiState.value = EditPostEvent.Error(postResponse.code.getPostErrorMessage())
-                    }
-                    is ApiResponse.Exception -> {
-                        _uiState.value = EditPostEvent.Error(
-                            context.getString(R.string.post_failed_network_error)
-                        )
-                    }
-                }
-
-            } catch (e: Exception) {
-                _uiState.value = EditPostEvent.Error("Có lỗi xảy ra: ${e.message}")
-            }
-        }
-    }
-
-    fun uploadAndCreatePost(context: Context, caption: String) {
+    fun uploadAndCreatePost(
+        caption: String,
+        imageUri: Uri,
+        context: Context,
+        navController: NavController,
+        homeFeedViewModel: HomeFeedViewModel
+    ) {
         viewModelScope.launch {
             _uiState.value = EditPostEvent.Loading
             try {
@@ -166,8 +101,23 @@ class EditPostViewModel @Inject constructor(
                                 )
                             )
                         )
-                        instaGalleryApi.createPost(createRequest)
-                        _navigationEvent.emit(EditPostNavigationEvent.NavigateBackToHome)
+
+                        val postCreationResponse = instaGalleryApi.createPost(createRequest)
+                        if (postCreationResponse.isSuccessful && postCreationResponse.body() != null) {
+                            val newPost = postCreationResponse.body()!!
+
+                            _uiState.value = EditPostEvent.Success
+
+                            // Load lại toàn bộ để đồng bộ dữ liệu
+                            homeFeedViewModel.loadAllPosts()
+
+                            // Quay lại màn hình Home
+                            navController.navigate(Screen.HomeFeed.route) {
+                                popUpTo(Screen.HomeFeed.route) { inclusive = true }
+                            }
+                        } else {
+                            _uiState.value = EditPostEvent.Error("Tạo bài viết thất bại")
+                        }
                     } else {
                         _uiState.value = EditPostEvent.Error("Không nhận được URL ảnh")
                     }
@@ -179,6 +129,7 @@ class EditPostViewModel @Inject constructor(
             }
         }
     }
+
 
 
 
