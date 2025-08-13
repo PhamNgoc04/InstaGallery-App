@@ -134,6 +134,7 @@ fun PostItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
+            .wrapContentHeight()
             .padding(bottom = 16.dp) // Khoảng cách giữa các bài đăng
     ) {
         PostHeader(
@@ -147,11 +148,11 @@ fun PostItem(
             AsyncImage(
                 model = firstImageUrl,
                 contentDescription = "Post image",
-                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp)
-                    .clickable { onPostClick(post.postId) } // Chỉ click vào ảnh mới mở trang chi tiết
+                    .clickable { onPostClick(post.postId) }, // Chỉ click vào ảnh mới mở trang chi tiết
+                contentScale = ContentScale.Fit
             )
         }
         PostActions(

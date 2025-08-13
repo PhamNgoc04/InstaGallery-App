@@ -12,6 +12,7 @@ import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.SignUpRequest
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.remote.safeApiCall
+import com.codewithngoc.instagallery.data.repository.AuthRepository
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInViewModel
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInViewModel.Companion
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInViewModel.SignInEvent
@@ -26,7 +27,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
-    val instaGalleryApi: InstaGalleryApi,
+    private val repository: AuthRepository,
     val session: InstaGallerySession,
     @ApplicationContext val context: Context
 ) : ViewModel() {
@@ -167,16 +168,14 @@ class SignUpViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = SignUpEvent.Loading
 
-            val response = safeApiCall {
-                instaGalleryApi.signUp(
-                    SignUpRequest(
-                        username = _username.value,
-                        fullName = _fullName.value,
-                        email = _email.value,
-                        password = _password.value,
-                    )
+            val response = repository.signup(
+                SignUpRequest(
+                    username = _username.value,
+                    fullName = _fullName.value,
+                    email = _email.value,
+                    password = _password.value,
                 )
-            }
+            )
 
             when (response) {
                 is ApiResponse.Success -> {

@@ -13,8 +13,6 @@ import com.codewithngoc.instagallery.data.model.MediaItem
 import com.codewithngoc.instagallery.data.model.MediaType
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.PostVisibility
-import com.codewithngoc.instagallery.data.remote.ApiResponse
-import com.codewithngoc.instagallery.data.remote.safeApiCall
 import com.codewithngoc.instagallery.data.utils.uriToMultipart
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedViewModel
 import com.codewithngoc.instagallery.ui.navigation.Screen

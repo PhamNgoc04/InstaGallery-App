@@ -9,6 +9,7 @@ import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.remote.safeApiCall
+import com.codewithngoc.instagallery.data.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,7 +25,7 @@ val newPostSharedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
 @HiltViewModel
 class HomeFeedViewModel @Inject constructor(
-    val instaGalleryApi: InstaGalleryApi,
+    private val repository: PostRepository,
     val session: InstaGallerySession,
     @ApplicationContext val context: Context
 ) : ViewModel() {
@@ -57,9 +58,7 @@ class HomeFeedViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = PostEvent.Loading
 
-            val response = safeApiCall {
-                instaGalleryApi.getAllPosts()
-            }
+            val response = repository.getAllPosts()
 
             when (response) {
                 is ApiResponse.Success -> {

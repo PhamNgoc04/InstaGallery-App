@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -95,6 +96,7 @@ fun NewPostScreen(navController: NavController) {
             if (permissionState.status.isGranted) {
                 MediaGallery(
                     mediaUris = mediaUris,
+                    selectedUri = selectedUri,
                     onMediaSelected = { uri -> selectedUri = uri }
                 )
             } else {
@@ -110,58 +112,67 @@ fun NewPostScreen(navController: NavController) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewPostTopBar(navController: NavController,  selectedUri: Uri?) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp).padding(top = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Close,
-            contentDescription = "Close",
-            tint = Color.White,
-            modifier = Modifier.clickable { navController.popBackStack() }
-        )
-        Text(
-            text = "Bài viết mới",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Tiếp",
-            color = if (selectedUri != null) MaterialTheme.colorScheme.primary else Color.Gray,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.clickable(enabled = selectedUri != null) {
-                selectedUri?.let {
-                    // Điều hướng sang màn hình chỉnh sửa và truyền URI của ảnh đã chọn
-                    navController.navigate(Screen.EditPost.createRoute(Uri.encode(it.toString())))
-                }
+    TopAppBar(
+        title = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("Bài viết mới")
             }
+        },
+        navigationIcon = {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+        },
+        actions = {
+            Text(
+                text = "Tiếp",
+                color = if (selectedUri != null) MaterialTheme.colorScheme.primary else Color.Gray,
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .clickable(enabled = selectedUri != null) {
+                        selectedUri?.let {
+                            navController.navigate(Screen.EditPost.createRoute(Uri.encode(it.toString())))
+                        }
+                    }
+            )
+        },
+        colors = TopAppBarDefaults.smallTopAppBarColors(
+            containerColor = Color.Black.copy(alpha = 0.85f),
+            titleContentColor = Color.White,
+            navigationIconContentColor = Color.White,
+            actionIconContentColor = MaterialTheme.colorScheme.primary
         )
-    }
+    )
 }
 
 @Composable
 fun SelectedMediaSection(selectedUri: Uri?) {
-    Box(
+    Surface (
         modifier = Modifier
             .fillMaxWidth()
-            .height(350.dp)
+            .height(350.dp),
+        shape = MaterialTheme.shapes.medium,
+        shadowElevation = 8.dp,
+        color = Color.Black
     ) {
         if (selectedUri != null) {
             AsyncImage(
                 model = selectedUri,
                 contentDescription = "Selected Image",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Fit
             )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "Vui lòng chọn ảnh.", color = Color.Gray)
+            }
         }
-        // Additional icons for filters, etc. could be placed here
     }
 }
 
@@ -175,7 +186,12 @@ fun MediaGalleryHeader() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "Gần đây", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Gần đây",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
             Icon(
                 painter = painterResource(id = R.drawable.ic_dropdown),
                 contentDescription = "Dropdown",
@@ -183,12 +199,18 @@ fun MediaGalleryHeader() {
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
-        // Icon for multi-select, etc.
+        IconButton(onClick = { /* TODO: mở dialog chọn bộ lọc media */ }) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_filter),
+                contentDescription = "Filter",
+                tint = Color.White
+            )
+        }
     }
 }
 
 @Composable
-fun MediaGallery(mediaUris: List<Uri>, onMediaSelected: (Uri) -> Unit) {
+fun MediaGallery(mediaUris: List<Uri>,selectedUri: Uri?, onMediaSelected: (Uri) -> Unit) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize(),
@@ -196,14 +218,24 @@ fun MediaGallery(mediaUris: List<Uri>, onMediaSelected: (Uri) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         items(mediaUris) { uri ->
-            AsyncImage(
-                model = uri,
-                contentDescription = "Gallery Image",
-                contentScale = ContentScale.Crop,
+            val isSelected = uri == selectedUri
+            Box (
                 modifier = Modifier
                     .aspectRatio(1f)
                     .clickable { onMediaSelected(uri) }
-            )
+                    .border(
+                        width = if (isSelected) 3.dp else 0.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+                    )
+
+            ) {
+                AsyncImage(
+                    model = uri,
+                    contentDescription = "Gallery Image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
@@ -276,6 +308,7 @@ fun NewPostScreenPreview() {
 
             MediaGallery(
                 mediaUris = mockMediaUris,
+                selectedUri = selectedMockUri,
                 onMediaSelected = { /* no-op in preview */ }
             )
         }

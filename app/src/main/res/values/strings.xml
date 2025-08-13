@@ -45,5 +45,7 @@
     <string name="post_failed_network_error">Lỗi kết nối mạng, vui lòng kiểm tra lại.</string>
     <string name="post_failed_missing_data">Thiếu dữ liệu, vui lòng nhập đầy đủ thông tin.</string>
 
+    <string name="themchuthich">Thêm chú thích...</string>
+
 
 </resources>

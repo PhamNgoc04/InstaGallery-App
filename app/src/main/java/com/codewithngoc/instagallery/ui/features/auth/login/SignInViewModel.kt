@@ -10,6 +10,7 @@ import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.SignInRequest
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.remote.safeApiCall
+import com.codewithngoc.instagallery.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -21,7 +22,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
-    val instaGalleryApi: InstaGalleryApi,
+    private val repository: AuthRepository,
     val session: InstaGallerySession,
     @ApplicationContext val context: Context
 ) : ViewModel() {
@@ -87,14 +88,12 @@ class SignInViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.value = SignInEvent.Loading
-            val response = safeApiCall {
-                instaGalleryApi.signIn(
-                    SignInRequest(
-                        email = _email.value,
-                        password = _password.value
-                    )
+            val response = repository.signIn(
+                SignInRequest(
+                    email = _email.value,
+                    password = _password.value
                 )
-            }
+            )
 
             // Xử lý kết quả trả về
             when (response) {

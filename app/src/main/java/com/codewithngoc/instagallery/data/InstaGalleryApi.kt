@@ -33,7 +33,7 @@ interface InstaGalleryApi {
     suspend fun uploadFile(@Part file: MultipartBody.Part): Response<UploadResponse>
 
     // Lấy tất cả bài đăng
-    @GET("api/admin/posts")
+    @GET("api/posts")
     suspend fun getAllPosts(): Response<List<PostResponse>>
 
 }

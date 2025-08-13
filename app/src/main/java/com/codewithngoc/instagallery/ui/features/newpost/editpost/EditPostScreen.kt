@@ -10,11 +10,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,7 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedViewModel
+import com.codewithngoc.instagallery.ui.floatingLabelTextField.FloatingLabelTextField
 import com.codewithngoc.instagallery.ui.navigation.Screen
 import com.codewithngoc.instagallery.ui.theme.InstaGalleryAppTheme
 
@@ -43,6 +44,10 @@ fun EditPostScreen(
     homeFeedViewModel: HomeFeedViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    var isAIEnabled by remember { mutableStateOf(false) }
+
+    // Xử lý sự kiện đóng dialog
+    var showCloseDialog by remember { mutableStateOf(false) }
 
     // Set media 1 lần
     LaunchedEffect(selectedUri) {
@@ -64,6 +69,7 @@ fun EditPostScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val caption by viewModel.caption.collectAsState()
+    val isCaptionEmpty = caption.isEmpty()
 
     // Xử lý Error
     if (uiState is EditPostViewModel.EditPostEvent.Error) {
@@ -75,8 +81,9 @@ fun EditPostScreen(
 
     Scaffold(
         topBar = {
-            NewPostTopBar(
+            EditPostTopBar(
                 navController,
+                onCloseClick = { showCloseDialog = true },
                 onShareClick = {
                     viewModel.uploadAndCreatePost(
                         caption = caption,
@@ -89,7 +96,7 @@ fun EditPostScreen(
             )
         },
         bottomBar = {
-            NewPostBottomBar(
+            EditPostBottomBar(
                 onShareClick = {
                     viewModel.uploadAndCreatePost(
                         caption = caption,
@@ -106,6 +113,7 @@ fun EditPostScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .wrapContentHeight()
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -118,28 +126,74 @@ fun EditPostScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(300.dp),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Fit
                     )
 
-                    OutlinedTextField(
+                    TextField(
                         value = caption,
                         onValueChange = { viewModel.onCaptionChanged(it) },
-                        label = { Text("Thêm chú thích...") },
+                        placeholder = {
+                            // Placeholder sẽ tự động biến mất khi có văn bản hoặc khi focus
+                            Text("Thêm chú thích...")
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(16.dp),
+                        // Loại bỏ các viền mặc định của TextField
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent
+                        )
                     )
 
                     Divider(color = Color.LightGray, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    NewPostOption(iconRes = R.drawable.ic_music, text = "Thêm âm thanh")
-                    NewPostOption(iconRes = R.drawable.ic_gui, text = "Gắn thẻ người khác")
-                    NewPostOption(iconRes = R.drawable.ic_location, text = "Thêm vị trí")
-                    NewPostOption(iconRes = R.drawable.ic_ai, text = "Thêm AI", showSwitch = true)
+
+                    EditPostOption(
+                        iconRes = R.drawable.ic_music,
+                        text = "Thêm âm thanh",
+                        onOptionClick = { Toast.makeText(context, "Mở dialog chọn nhạc", Toast.LENGTH_SHORT).show() }
+                    )
+                    EditPostOption(
+                        iconRes = R.drawable.ic_gui,
+                        text = "Gắn thẻ người khác",
+                        onOptionClick = { Toast.makeText(context, "Mở dialog gắn thẻ", Toast.LENGTH_SHORT).show() }
+                    )
+                    EditPostOption(
+                        iconRes = R.drawable.ic_location,
+                        text = "Thêm vị trí",
+                        onOptionClick = { Toast.makeText(context, "Mở dialog chọn vị trí", Toast.LENGTH_SHORT).show() }
+                    )
+                    EditPostOption(
+                        iconRes = R.drawable.ic_ai,
+                        text = "Thêm AI",
+                        showSwitch = true,
+                        isSwitchChecked = isAIEnabled,
+                        onSwitchChange = { isAIEnabled = it; Toast.makeText(context, "AI đã ${if (it) "bật" else "tắt"}", Toast.LENGTH_SHORT).show() }
+                    )
 
                     Divider(color = Color.LightGray, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    NewPostOption(iconRes = R.drawable.ic_object, text = "Đối tượng", trailingText = "Mọi người")
-                    NewPostOption(iconRes = R.drawable.ic_share_on, text = "Cùng chia sẻ trên...", trailingText = "Đang tắt")
-                    NewPostOption(iconRes = R.drawable.ic_more, text = "Lựa chọn khác")
+
+                    EditPostOption(
+                        iconRes = R.drawable.ic_object,
+                        text = "Đối tượng",
+                        trailingText = "Mọi người",
+                        onOptionClick = { Toast.makeText(context, "Mở dialog chọn đối tượng", Toast.LENGTH_SHORT).show() }
+                    )
+                    EditPostOption(
+                        iconRes = R.drawable.ic_share_on,
+                        text = "Cùng chia sẻ trên...",
+                        trailingText = "Đang tắt",
+                        onOptionClick = { Toast.makeText(context, "Mở dialog chia sẻ trên", Toast.LENGTH_SHORT).show() }
+                    )
+                    EditPostOption(
+                        iconRes = R.drawable.ic_more,
+                        text = "Lựa chọn khác",
+                        onOptionClick = { Toast.makeText(context, "Mở dialog tùy chọn khác", Toast.LENGTH_SHORT).show() }
+                    )
                 }
             }
 
@@ -155,10 +209,93 @@ fun EditPostScreen(
             }
         }
     }
+
+    // Show the dialog if the state is true
+    if (showCloseDialog) {
+        ExitConfirmationDialog(
+            onDismiss = { showCloseDialog = false },
+            onDiscard = {
+                // Discard changes and navigate back to the NewPostScreen
+                showCloseDialog = false
+                navController.popBackStack()
+            },
+            onSaveDraft = {
+                // Handle saving draft logic here
+                showCloseDialog = false
+                Toast.makeText(context, "Đã lưu bản nháp", Toast.LENGTH_SHORT).show()
+                // You might also want to navigate back after saving
+            },
+            onContinue = { showCloseDialog = false } // Dismiss dialog and stay on screen
+        )
+    }
+}
+
+// Top Bar của màn hình đăng bài mới
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditPostTopBar(
+    navController: NavController,
+    onCloseClick: () -> Unit,
+    onShareClick: () -> Unit) {
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                "Bài viết mới",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = { onCloseClick() }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Quay lại"
+                )
+            }
+        },
+        modifier = Modifier.background(Color.White)
+    )
 }
 
 @Composable
-fun NewPostBottomBar(onShareClick: () -> Unit) {
+fun ExitConfirmationDialog(
+    onDismiss: () -> Unit,
+    onDiscard: () -> Unit, // Renamed from onRestart for clarity
+    onSaveDraft: () -> Unit,
+    onContinue: () -> Unit
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Bắt đầu lại?", color = Color.White) },
+        text = { Text(text = "Nếu quay lại bây giờ, bạn sẽ mất bản nháp này.", color = Color.Gray) },
+        containerColor = Color.Black.copy(alpha = 0.85f),
+        titleContentColor = Color.White,
+        textContentColor = Color.White,
+        confirmButton = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                TextButton(onClick = onDiscard) {
+                    Text("Bắt đầu lại", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+                Divider(color = Color.DarkGray)
+                TextButton(onClick = onSaveDraft) {
+                    Text("Lưu bản nháp", color = Color.White)
+                }
+                Divider(color = Color.DarkGray)
+                TextButton(onClick = onContinue) {
+                    Text("Tiếp tục chỉnh sửa", color = Color.White)
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun EditPostBottomBar(onShareClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -176,37 +313,22 @@ fun NewPostBottomBar(onShareClick: () -> Unit) {
     }
 }
 
-// Top Bar của màn hình đăng bài mới
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NewPostTopBar(navController: NavController, onShareClick: () -> Unit) {
-    CenterAlignedTopAppBar(
-        title = {
-            Text(
-                "Bài viết mới",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Quay lại"
-                )
-            }
-        },
-        modifier = Modifier.background(Color.White)
-    )
-}
 
 // Component cho các tùy chọn trong danh sách
 @Composable
-fun NewPostOption(iconRes: Int, text: String, trailingText: String? = null, showSwitch: Boolean = false) {
+fun EditPostOption(
+    iconRes: Int,
+    text: String,
+    trailingText: String? = null,
+    showSwitch: Boolean = false,
+    isSwitchChecked: Boolean = false,
+    onOptionClick: (() -> Unit)? = null,
+    onSwitchChange: ((Boolean) -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Xử lý click */ }
+            .clickable(enabled = onOptionClick != null) { onOptionClick?.invoke() }
             .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -222,7 +344,10 @@ fun NewPostOption(iconRes: Int, text: String, trailingText: String? = null, show
             Text(text = text, fontSize = 16.sp)
         }
         if (showSwitch) {
-            Switch(checked = false, onCheckedChange = { /* Xử lý switch */ })
+            Switch(
+                checked = isSwitchChecked,
+                onCheckedChange = { onSwitchChange?.invoke(it) }
+            )
         } else if (trailingText != null) {
             Text(text = trailingText, color = Color.Gray)
         }
@@ -231,7 +356,7 @@ fun NewPostOption(iconRes: Int, text: String, trailingText: String? = null, show
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun NewPostScreenPreview() {
+fun EditPostScreenPreview() {
     val navController = rememberNavController()
     val mockUri = Uri.parse("https://picsum.photos/id/1018/1080/1920")
     InstaGalleryAppTheme {
