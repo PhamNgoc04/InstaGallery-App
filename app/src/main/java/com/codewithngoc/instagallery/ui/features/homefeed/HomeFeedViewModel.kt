@@ -63,7 +63,9 @@ class HomeFeedViewModel @Inject constructor(
             when (response) {
                 is ApiResponse.Success -> {
                     _uiState.value = PostEvent.Success
-                    _posts.value = response.data
+                    _posts.value = response.data.map {post ->
+                        post
+                    }
                 }
                 is ApiResponse.Error -> {
                     _uiState.value = PostEvent.Error(response.code.getFeedErrorMessage())
@@ -82,6 +84,11 @@ class HomeFeedViewModel @Inject constructor(
             _navigationEvent.emit(HomeFeedNavigationEvent.NavigateToPostDetail(postId.toString()))
         }
     }
+
+    fun updatePosts(updatedPosts: List<PostResponse>) {
+        _posts.value = updatedPosts
+    }
+
 
     private fun Int.getFeedErrorMessage(): String {
         return when (this) {

@@ -1,5 +1,7 @@
 package com.codewithngoc.instagallery.ui.features.homefeed
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,18 +41,53 @@ import com.codewithngoc.instagallery.data.model.MediaResponse
 import com.codewithngoc.instagallery.data.model.MediaType
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.PostVisibility
+import com.codewithngoc.instagallery.data.utils.formatTimeAgo
+import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentBottomSheet
+import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentViewModel
+import com.codewithngoc.instagallery.ui.features.homefeed.postmorebottomsheet.PostMoreBottomSheet
 import com.codewithngoc.instagallery.ui.navigation.Screen
 import kotlinx.coroutines.flow.collectLatest
+import java.time.Instant
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeFeedScreen(
     navController: NavController,
     viewModel: HomeFeedViewModel = hiltViewModel()
 ) {
+    // Biến trạng thái để hiển thị Loading
     val uiState = viewModel.uiState.collectAsState()
+
+    // Biến trạng thái để hiển thị danh sách posts
     val posts by viewModel.posts.collectAsState()
 
+    // Biến trạng thái để hiển thị CommentBottomSheet
+    var showCommentDialog by remember { mutableStateOf(false) }
+
+    // Biến trạng thái để hiển thị MoreBottomSheet
+    var selectedPostIdForComment by remember { mutableStateOf<Int?>(null) }
+
+    // ✅ Khởi tạo CommentViewModel dùng để hiển thị CommentBottomSheet
+    val commentViewModel: CommentViewModel = hiltViewModel()
+
+    // Biến trạng thái cho Share/More BottomSheet
+    var showMoreBottomSheet by remember { mutableStateOf(false) }
+    var selectedPostIdForMore by remember { mutableStateOf<Int?>(null) }
+
+    // ✅ Theo dõi sự kiện từ CommentViewModel
+    LaunchedEffect(Unit) {
+        commentViewModel.newCommentEvent.collect { (postId, comment) ->
+            // Cập nhật số lượng comment trong danh sách posts
+            val updatedPosts = posts.map { post ->
+                if (post.postId == postId) post.copy(commentCount = post.commentCount + 1)
+                else post
+            }
+            viewModel.updatePosts(updatedPosts)
+        }
+    }
+
+    // ✅ Theo dõi sự kiện từ HomeFeedViewModel
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collectLatest { event ->
             when (event) {
@@ -65,15 +104,16 @@ fun HomeFeedScreen(
 //        viewModel.loadAllPosts()
 //    }
 
+    // Hiển thị Scaffold
     Scaffold(
-        topBar = { HomeInsTopBar() },
-        bottomBar = { HomeInsBottomBar(navController = navController) },
+        topBar = { HomeInsTopBar() }, // ✅ Sử dụng HomeInsTopBar
+        bottomBar = { HomeInsBottomBar(navController = navController) }, // ✅ Sử dụng HomeInsBottomBar
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             when (uiState.value) {
-                is HomeFeedViewModel.PostEvent.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+//                is HomeFeedViewModel.PostEvent.Loading -> {
+//                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+//                }
                 is HomeFeedViewModel.PostEvent.Error -> {
                     Text(
                         text = (uiState.value as HomeFeedViewModel.PostEvent.Error).message,
@@ -87,13 +127,40 @@ fun HomeFeedScreen(
                         onPostClick = { postId -> viewModel.onPostClick(postId) },
                         onProfileClick = { userId -> /* TODO: Navigate to Profile screen */ },
                         onLikeClick = { postId -> /* TODO: Call ViewModel function to handle like */ },
-                        onCommentClick = { postId -> /* TODO: Handle comment action */ }
+                        onCommentClick = { postId ->
+                            selectedPostIdForComment = postId
+                            showCommentDialog = true
+                        },
+                        onMoreClick = { postId -> // ✅ Thêm callback onMoreClick
+                            selectedPostIdForMore = postId
+                            showMoreBottomSheet = true
+                        }
                     )
                 }
             }
         }
     }
+
+    // ✅ Hiển thị CommentBottomSheet
+    if (showCommentDialog && selectedPostIdForComment != null) {
+        CommentBottomSheet( // Gọi CommentBottomSheet thay vì CommentDialog
+            onDismiss = {
+                showCommentDialog = false
+                selectedPostIdForComment = null
+            },
+            postId = selectedPostIdForComment!!
+        )
+    }
+
+    // ✅ Hiển thị MoreBottomSheet
+    if (showMoreBottomSheet && selectedPostIdForMore != null) {
+        PostMoreBottomSheet(
+            onDismiss = { showMoreBottomSheet = false },
+            postId = selectedPostIdForMore!!
+        )
+    }
 }
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostList(
     modifier: Modifier = Modifier,
@@ -102,6 +169,7 @@ fun PostList(
     onProfileClick: (Int) -> Unit,
     onLikeClick: (Int) -> Unit,
     onCommentClick: (Int) -> Unit,
+    onMoreClick: (Int) -> Unit,
 ) {
     LazyColumn(
         modifier = modifier
@@ -116,12 +184,14 @@ fun PostList(
                 onPostClick = { onPostClick(post.postId) }, // Mở trang chi tiết bài viết khi click vào ảnh
                 onProfileClick = { onProfileClick(post.author.userId) }, // Mở trang cá nhân khi click vào avatar/tên
                 onLikeClick = { onLikeClick(post.postId) }, // Xử lý sự kiện thích bài viết
-                onCommentClick = { onCommentClick(post.postId) } // Xử lý sự kiện bình luận
+                onCommentClick = { onCommentClick(post.postId) }, // Xử lý sự kiện bình luận
+                onMoreClick = { onMoreClick(post.postId) } // Xử lý sự kiện click More
             )
         }
     }
 }
-//--------------------------------------------------------------------------------------------------
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostItem(
     post: PostResponse,
@@ -129,6 +199,7 @@ fun PostItem(
     onProfileClick: (Int) -> Unit, // Hành động khi click avatar
     onLikeClick: (Int) -> Unit,    // Hành động khi click like
     onCommentClick: (Int) -> Unit, // Hành động khi click comment
+    onMoreClick: (Int) -> Unit, // Hành động khi click More
 ) {
     Column(
         modifier = Modifier
@@ -140,7 +211,8 @@ fun PostItem(
         PostHeader(
             author = post.author,
             onProfileClick = onProfileClick, // Truyền hành động click avatar
-            postTime = "5:30 PM"
+            onMoreClick = { onMoreClick(post.postId) },
+            postCreatedAt = post.createdAt?: "",
         )
         // --- Post Image (Clickable) ---
         val firstImageUrl = post.media.firstOrNull()?.mediaFileUrl
@@ -172,12 +244,14 @@ fun PostItem(
         )
     }
 }
-//--------------------------------------------------------------------------------------------------
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostHeader(
     author: AuthorInfoResponse,
     onProfileClick: (Int) -> Unit,
-    postTime: String
+    onMoreClick: (Int) -> Unit,
+    postCreatedAt: String?,
 ) {
     Row(
         modifier = Modifier
@@ -208,18 +282,22 @@ fun PostHeader(
                     color = Color.Black
                 )
                 Text(
-                    text = postTime,
+                    text = formatTimeAgo(postCreatedAt ?: ""),
                     color = Color.Gray,
                     fontSize = 12.sp
                 )
             }
         }
         // Share Icon
-        Image(
-            painter = painterResource(id = R.drawable.group_share),
-            contentDescription = "Share",
-            modifier = Modifier.size(24.dp)
-        )
+        // ✅ Nút more icon để mở bottom sheet
+        IconButton(onClick = { onMoreClick(author.userId) }) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_more),
+                contentDescription = "More options",
+                tint = Color.Gray,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
 @Composable
@@ -409,6 +487,8 @@ fun PostDetailScreen(postId: String, navController: NavController) {
         Text(text = "Post Detail for id: $postId")
     }
 }
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun HomeFeedScreenPreview() {
@@ -424,7 +504,8 @@ fun HomeFeedScreenPreview() {
             visibility = PostVisibility.PUBLIC,
             media = listOf(MediaResponse(1, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e", mediaType = MediaType.IMAGE, position = 0)),
             likeCount = 12,
-            commentCount = 5
+            commentCount = 5,
+            createdAt = "2023-08-01T12:00:00Z"
         ),
         PostResponse(
             postId = 2,
@@ -434,7 +515,8 @@ fun HomeFeedScreenPreview() {
             visibility = PostVisibility.PUBLIC,
             media = listOf(MediaResponse(2, "https://images.unsplash.com/photo-1519985176271-adb1088fa94c", mediaType = MediaType.IMAGE, position = 1)),
             likeCount = 20,
-            commentCount = 8
+            commentCount = 8,
+            createdAt = "2023-08-02T15:30:00Z"
         )
     )
     Scaffold(
@@ -447,7 +529,8 @@ fun HomeFeedScreenPreview() {
             onPostClick = {},
             onProfileClick = {},
             onLikeClick = {},
-            onCommentClick = {}
+            onCommentClick = {},
+            onMoreClick = {}
         )
     }
 }

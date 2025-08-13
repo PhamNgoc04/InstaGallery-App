@@ -1,5 +1,8 @@
 package com.codewithngoc.instagallery.data.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class CreatePostRequest(
     val caption: String?,
     val visibility: PostVisibility,
@@ -7,6 +10,7 @@ data class CreatePostRequest(
     val media: List<MediaItem>
 )
 
+@Serializable
 data class MediaItem(
     val mediaFileUrl: String,
     val thumbnailUrl: String? = null,

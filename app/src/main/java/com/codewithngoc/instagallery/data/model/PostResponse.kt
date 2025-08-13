@@ -1,5 +1,8 @@
 package com.codewithngoc.instagallery.data.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class PostResponse (
     val postId: Int,
     val author: AuthorInfoResponse,
@@ -8,9 +11,11 @@ data class PostResponse (
     val visibility: PostVisibility,
     val media: List<MediaResponse>,
     val likeCount: Int,
-    val commentCount: Int
+    val commentCount: Int,
+    val createdAt: String
 )
 
+@Serializable
 data class MediaResponse(
     val mediaId: Int,
     val mediaFileUrl: String,
@@ -21,6 +26,7 @@ data class MediaResponse(
     val metadata: String? = null
 )
 
+@Serializable
 data class AuthorInfoResponse(
     val userId: Int,
     val username: String,

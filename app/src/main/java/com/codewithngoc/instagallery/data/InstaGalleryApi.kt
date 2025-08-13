@@ -1,6 +1,8 @@
 package com.codewithngoc.instagallery.data
 
+import com.codewithngoc.instagallery.data.model.AddCommentRequest
 import com.codewithngoc.instagallery.data.model.AuthResponse
+import com.codewithngoc.instagallery.data.model.CommentResponse
 import com.codewithngoc.instagallery.data.model.CreatePostRequest
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.SignInRequest
@@ -14,6 +16,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface InstaGalleryApi {
     // Đăng nhập
@@ -36,4 +39,18 @@ interface InstaGalleryApi {
     @GET("api/posts")
     suspend fun getAllPosts(): Response<List<PostResponse>>
 
+    // ✅ API để thêm bình luận
+    @POST("api/posts/{postId}/comments")
+    suspend fun addComment(
+        @Path("postId") postId: Int,
+        @Body request: AddCommentRequest
+    ): Response<CommentResponse>
+
+    // ✅ API để lấy danh sách bình luận
+    @GET("api/posts/{postId}/comments")
+    suspend fun getCommentsForPost(
+        @Path("postId") postId: Int,
+        @Query("page") page: Int,
+        @Query("size") size: Int
+    ): Response<List<CommentResponse>>
 }
