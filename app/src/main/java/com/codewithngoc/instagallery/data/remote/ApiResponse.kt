@@ -32,3 +32,21 @@ suspend fun <T> safeApiCall(apiCall: suspend () -> Response<T>) : ApiResponse<T>
         ApiResponse.Exception(e)
     }
 }
+
+suspend fun <T> safeAuthApiCall(
+    token: String?,
+    apiCall: suspend (authToken: String) -> Response<T>
+): ApiResponse<T> {
+    val authToken = token ?: return ApiResponse.Error(401, "User not authenticated")
+    return try {
+        val res = apiCall("Bearer $authToken")
+        if (res.isSuccessful) {
+            res.body()?.let { ApiResponse.Success(it) }
+                ?: ApiResponse.Error(res.code(), "API call successful but returned null body")
+        } else {
+            ApiResponse.Error(res.code(), res.errorBody()?.string() ?: "Unknown error")
+        }
+    } catch (e: Exception) {
+        ApiResponse.Exception(e)
+    }
+}

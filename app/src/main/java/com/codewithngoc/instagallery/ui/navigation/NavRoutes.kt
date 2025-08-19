@@ -1,26 +1,33 @@
 package com.codewithngoc.instagallery.ui.navigation
 
 import android.net.Uri
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.ui.features.auth.AuthScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
+import com.codewithngoc.instagallery.ui.features.auth.login.SignInViewModel
 import com.codewithngoc.instagallery.ui.features.auth.signup.SignUpScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.PostDetailScreen
 import com.codewithngoc.instagallery.ui.features.newpost.NewPostScreen
 import com.codewithngoc.instagallery.ui.features.newpost.editpost.EditPostScreen
+import com.codewithngoc.instagallery.ui.features.profile.ProfileScreen
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
@@ -33,6 +40,7 @@ sealed class Screen(val route: String) {
     }
 
     object NewPost : Screen("new_post")
+
     object Profile : Screen("profile")
 
     object EditPost : Screen("edit_post_screen/{encodedUri}") {
@@ -41,12 +49,15 @@ sealed class Screen(val route: String) {
 
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Auth.route,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    session: InstaGallerySession = hiltViewModel<SignInViewModel>().session
 ) {
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -94,5 +105,30 @@ fun AppNavigation(
             EditPostScreen(selectedUri = uri, navController = navController)
         }
 
+        composable(
+            route = Screen.Profile.route
+        ) {
+
+            val currentUserId = session.getUserId()?.toIntOrNull()
+
+            // Kiểm tra và truyền userId vào ProfileScreen
+            if (currentUserId != null) {
+                ProfileScreen(navController, userId = currentUserId)
+            } else {
+                // Xử lý trường hợp không có userId
+                LaunchedEffect(Unit) {
+                    // Chuyển hướng về màn hình đăng nhập
+                    navController.navigate(Screen.Login.route) {
+                        // Xóa các màn hình trước đó khỏi back stack
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = true
+                        }
+                    }
+                }
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("User not logged in")
+                }
+            }
+        }
     }
 }

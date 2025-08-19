@@ -397,9 +397,14 @@ fun HomeInsTopBar() {
     }
 }
 @Composable
-fun HomeInsBottomBar(navController: NavController) {
+fun HomeInsBottomBar(
+    navController: NavController
+) {
+
     val currentRoute = navController.currentBackStackEntry?.destination?.route
+
     val standardIconSize = 26.dp
+
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 8.dp
@@ -444,10 +449,13 @@ fun HomeInsBottomBar(navController: NavController) {
                 modifier = Modifier.size(standardIconSize)
             )
         }
+
         val isProfileSelected = currentRoute == Screen.Profile.route
         BottomNavItem(
             isSelected = isProfileSelected,
-            onClick = { /* TODO: mở Profile */ }
+            onClick = {
+                    navController.navigate(Screen.Profile.route)
+            }
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_register_logo),

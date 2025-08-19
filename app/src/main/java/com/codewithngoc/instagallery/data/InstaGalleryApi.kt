@@ -8,10 +8,12 @@ import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.SignInRequest
 import com.codewithngoc.instagallery.data.model.SignUpRequest
 import com.codewithngoc.instagallery.data.model.UploadResponse
+import com.codewithngoc.instagallery.data.model.UserProfileResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -53,4 +55,25 @@ interface InstaGalleryApi {
         @Query("page") page: Int,
         @Query("size") size: Int
     ): Response<List<CommentResponse>>
+
+    // ✅ API để xóa bình luận
+
+    // ✅ API để like bài đăng
+
+    // ✅ API để unlike bài đăng
+
+    // 👤 Lấy thông tin người dùng
+    @GET("api/auth/profile/{id}")
+    suspend fun getUserProfile(
+        @Header("Authorization") token: String,
+        @Path("id") userId: Int
+    ): Response<UserProfileResponse>
+
+    // 📸 Lấy danh sách bài đăng của 1 người dùng
+    @GET("api/posts/user/{id}")
+    suspend fun getUserPosts(
+        @Header("Authorization") token: String,
+        @Path("id") userId: Int
+    ): Response<List<PostResponse>>
+
 }
