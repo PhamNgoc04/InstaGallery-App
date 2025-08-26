@@ -23,12 +23,23 @@ object AppModule {
     @Provides
     fun provideClient(session: InstaGallerySession, @ApplicationContext context: Context): OkHttpClient {
         val client = OkHttpClient.Builder()
+//        client.addInterceptor { chain ->
+//            val request = chain.request().newBuilder()
+//                .addHeader("Authorization", "Bearer ${session.getToken()}")
+//                .addHeader("X-Package-Name", context.packageName)
+//                .build()
+//            chain.proceed(request)
+//        }
         client.addInterceptor { chain ->
-            val request = chain.request().newBuilder()
-                .addHeader("Authorization", "Bearer ${session.getToken()}")
+            val token = session.getToken()
+            val requestBuilder = chain.request().newBuilder()
                 .addHeader("X-Package-Name", context.packageName)
-                .build()
-            chain.proceed(request)
+
+            if (!token.isNullOrEmpty()) {
+                requestBuilder.addHeader("Authorization", "Bearer $token")
+            }
+
+            chain.proceed(requestBuilder.build())
         }
         client.addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY

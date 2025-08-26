@@ -2,9 +2,15 @@ package com.codewithngoc.instagallery.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 // Lưu token để xác thực với
-class InstaGallerySession(val context : Context) {
+@Singleton
+class InstaGallerySession @Inject constructor(
+    @ApplicationContext context: Context
+)  {
     // Tạo đối tượng SharedPreferences với tên là "insta_gallery_session" để lưu trữ token
     // dưới dạng key-value
     val sharedPres : SharedPreferences =
@@ -30,5 +36,31 @@ class InstaGallerySession(val context : Context) {
 
     fun getUserId(): String? {
         return sharedPres.getString("userId", null)
+    }
+
+    fun clearToken() {
+        sharedPres.edit()
+            .remove("token")
+            .remove("userId")
+            .apply()
+    }
+
+    // ✅ Thêm hàm để lưu refresh token
+    fun storeRefreshToken(refreshToken: String) {
+        sharedPres.edit().putString("refreshToken", refreshToken).apply()
+    }
+
+    // ✅ Thêm hàm để lấy refresh token
+    fun getRefreshToken(): String? {
+        return sharedPres.getString("refreshToken", null)
+    }
+
+    // ✅ Cập nhật hàm clearToken để xóa cả token và refreshToken
+    fun clearTokens() {
+        sharedPres.edit()
+            .remove("token")
+            .remove("userId")
+            .remove("refreshToken")
+            .apply()
     }
 }

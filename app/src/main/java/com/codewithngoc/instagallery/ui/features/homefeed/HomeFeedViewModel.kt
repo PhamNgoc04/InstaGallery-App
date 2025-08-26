@@ -68,7 +68,17 @@ class HomeFeedViewModel @Inject constructor(
                     }
                 }
                 is ApiResponse.Error -> {
-                    _uiState.value = PostEvent.Error(response.code.getFeedErrorMessage())
+//                    _uiState.value = PostEvent.Error(response.code.getFeedErrorMessage())
+                    if (response.code == 401) {
+                        // Token hết hạn -> xoá token + điều hướng về login
+                        session.clearToken()
+                        _uiState.value = PostEvent.Error(
+                            context.getString(R.string.feed_failed_unauthorized)
+                        )
+                        _navigationEvent.emit(HomeFeedNavigationEvent.NavigateToPostDetail("login"))
+                    } else {
+                        _uiState.value = PostEvent.Error(response.code.getFeedErrorMessage())
+                    }
                 }
                 else -> {
                     _uiState.value = PostEvent.Error(
@@ -86,6 +96,18 @@ class HomeFeedViewModel @Inject constructor(
     }
 
     fun updatePosts(updatedPosts: List<PostResponse>) {
+        _posts.value = updatedPosts
+    }
+
+    fun updateCommentCount(postId: Int) {
+        val currentPosts = _posts.value
+        val updatedPosts = currentPosts.map { post ->
+            if (post.postId == postId) {
+                post.copy(commentCount = post.commentCount + 1)
+            } else {
+                post
+            }
+        }
         _posts.value = updatedPosts
     }
 

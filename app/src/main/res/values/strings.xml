@@ -47,5 +47,6 @@
 
     <string name="themchuthich">Thêm chú thích...</string>
 
+    <string name="feed_failed_unauthorized">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại</string>
 
 </resources>

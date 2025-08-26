@@ -27,4 +27,5 @@ class ProfileRepository @Inject constructor(
             api.getUserPosts(authToken, userId)
         }
     }
+
 }

@@ -1,6 +1,7 @@
 package com.codewithngoc.instagallery.ui.features.homefeed
 
 import android.os.Build
+import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -35,6 +39,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.data.model.AuthorInfoResponse
 import com.codewithngoc.instagallery.data.model.MediaResponse
@@ -77,13 +83,8 @@ fun HomeFeedScreen(
 
     // ✅ Theo dõi sự kiện từ CommentViewModel
     LaunchedEffect(Unit) {
-        commentViewModel.newCommentEvent.collect { (postId, comment) ->
-            // Cập nhật số lượng comment trong danh sách posts
-            val updatedPosts = posts.map { post ->
-                if (post.postId == postId) post.copy(commentCount = post.commentCount + 1)
-                else post
-            }
-            viewModel.updatePosts(updatedPosts)
+        commentViewModel.newCommentEvent.collect { (postId, _) ->
+            viewModel.updateCommentCount(postId)
         }
     }
 
@@ -160,6 +161,7 @@ fun HomeFeedScreen(
         )
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostList(
@@ -218,13 +220,20 @@ fun PostItem(
         val firstImageUrl = post.media.firstOrNull()?.mediaFileUrl
         if (firstImageUrl != null) {
             AsyncImage(
-                model = firstImageUrl,
-                contentDescription = "Post image",
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(firstImageUrl.takeIf { !it.isNullOrBlank() })
+                    .crossfade(true)
+                    .size(Size(1080, 1080)) // hạn chế load ảnh quá lớn
+                    .build(),
+                contentDescription = "Post Image",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp)
-                    .clickable { onPostClick(post.postId) }, // Chỉ click vào ảnh mới mở trang chi tiết
-                contentScale = ContentScale.Fit
+//                    .clip(RoundedCornerShape(12.dp)) // optional cho đẹp
+                    .clickable { onPostClick(post.postId) },
+                contentScale = ContentScale.Crop, // Fit nhìn dễ lỗi layout, Crop thường đẹp hơn
+                placeholder = painterResource(R.drawable.placeholder_post),
+                error = painterResource(R.drawable.ic_error) // ✅ thay bằng 1 vector drawable
             )
         }
         PostActions(
@@ -266,12 +275,17 @@ fun PostHeader(
         ) {
             // Avatar
             AsyncImage(
-                model = author.profilePictureUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(author.profilePictureUrl.takeIf { !it.isNullOrBlank() })
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Profile Image",
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                placeholder = ColorPainter(Color.LightGray), // ✅ thay shape bằng màu xám
+                error = painterResource(R.drawable.ic_error) // ✅ thay bằng 1 vector drawable
             )
             // User Info
             Column(modifier = Modifier.padding(horizontal = 12.dp)) {
@@ -288,8 +302,8 @@ fun PostHeader(
                 )
             }
         }
-        // Share Icon
-        // ✅ Nút more icon để mở bottom sheet
+//        // Share Icon
+//        // ✅ Nút more icon để mở bottom sheet
         IconButton(onClick = { onMoreClick(author.userId) }) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_more),
@@ -298,8 +312,12 @@ fun PostHeader(
                 modifier = Modifier.size(24.dp)
             )
         }
+
     }
 }
+
+
+
 @Composable
 fun PostActions(
     likeCount: Int,
@@ -365,6 +383,7 @@ fun PostActions(
         }
     }
 }
+
 @Composable
 fun HomeInsTopBar() {
     Row(
@@ -396,6 +415,7 @@ fun HomeInsTopBar() {
         )
     }
 }
+
 @Composable
 fun HomeInsBottomBar(
     navController: NavController

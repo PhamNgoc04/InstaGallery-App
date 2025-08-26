@@ -1,6 +1,7 @@
 package com.codewithngoc.instagallery
 
 import android.animation.ObjectAnimator
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -11,6 +12,7 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.codewithngoc.instagallery.data.InstaGalleryApi
+import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
 import com.codewithngoc.instagallery.ui.features.auth.signup.SignUpScreen
 import com.codewithngoc.instagallery.ui.navigation.AppNavigation
@@ -45,8 +48,14 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var instaGalleryApi: InstaGalleryApi
+
+    @Inject
+    lateinit var session: InstaGallerySession   // Thêm Session vào
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().apply {
+
             setKeepOnScreenCondition {
                 showSplashScreen
             }
@@ -64,6 +73,7 @@ class MainActivity : ComponentActivity() {
                     0.5f,
                     0f
                 )
+
                 zoomX.duration = 500
                 zoomY.duration = 500
                 zoomX.interpolator = OvershootInterpolator()
@@ -84,14 +94,16 @@ class MainActivity : ComponentActivity() {
 
             InstaGalleryAppTheme {
 
-                AppNavigation()
+                AppNavigation(
+                    session = session
+                )
             }
         }
         if (::instaGalleryApi.isInitialized) {
             Log.d("MainActivity", "InstaGalleryApi initialized successfully")
         }
         CoroutineScope(Dispatchers.IO).launch {
-            delay(3000)
+            delay(2000)
             showSplashScreen = false
         }
     }

@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Nền xám nhạt -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M0,0h100v100h-100z"/>
+
+    <!-- Icon ảnh mờ (ngọn núi + mặt trời) -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M20,70l20,-25 15,20 15,-20 20,25z"/>
+
+    <!-- Hình tròn thay cho mặt trời -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M35,27a8,8 0 1,0 0.1,0z"/>
+</vector>

@@ -23,7 +23,7 @@ sealed class ProfileUiState {
     object Loading : ProfileUiState()
     data class Success(
         val user: User,
-        val stats: List<UserState>,
+        val states: List<UserState>,
         val posts: List<PostResponse>
     ) : ProfileUiState()
 

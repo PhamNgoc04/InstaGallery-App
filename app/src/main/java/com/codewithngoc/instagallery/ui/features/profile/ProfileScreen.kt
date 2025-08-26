@@ -3,9 +3,9 @@ package com.codewithngoc.instagallery.ui.features.profile
 import android.os.Build
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,16 +20,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.codewithngoc.instagallery.R
+import com.codewithngoc.instagallery.data.model.AuthorInfoResponse
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.ProfileUiState
 import com.codewithngoc.instagallery.data.model.User
 import com.codewithngoc.instagallery.data.model.UserState
+import com.codewithngoc.instagallery.data.utils.formatTimeAgo
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeInsBottomBar
 import com.codewithngoc.instagallery.ui.features.homefeed.PostActions
 import com.codewithngoc.instagallery.ui.features.homefeed.PostHeader
@@ -62,21 +66,15 @@ fun ProfileScreen(
     }
 
     LaunchedEffect(Unit) {
-        commentViewModel.newCommentEvent.collect { (postId, comment) ->
-            val currentState = state
-            if (currentState is ProfileUiState.Success) {
-                val updatedPosts = currentState.posts.map { post ->
-                    if (post.postId == postId) post.copy(commentCount = post.commentCount + 1)
-                    else post
-                }
-                viewModel.updatePosts(updatedPosts)
-            }
+        commentViewModel.newCommentEvent.collect { (postId, _) ->
+            viewModel.updateCommentCount(postId)
         }
     }
 
-
     Scaffold(
-        topBar = { ProfileTopBar(navController = navController) },
+        topBar = { ProfileTopBar(
+            navController = navController
+        ) },
         bottomBar = { HomeInsBottomBar(navController = navController) },
         containerColor = Color.White
     ) { paddingValues ->
@@ -101,7 +99,7 @@ fun ProfileScreen(
                     item {
                         ProfileHeader(
                             user = success.user,
-                            stats = success.stats
+                            states = success.states
                         )
                     }
                     // 2. Story Highlights (dummy data vì backend chưa có)
@@ -122,29 +120,24 @@ fun ProfileScreen(
                     }
                     // 4. Danh sách bài đăng
                     items(items = success.posts, key = { it.postId }) { post ->
-                        PostItem (
+                        ProfilePostItem (
                             post = post,
                             onPostClick = { postId ->
                                 navController.navigate(Screen.PostDetail.createRoute(postId.toString()))
                             },
-                            onMoreClick = { postId ->
-                                selectedPostIdForMore = postId
-                                showMoreBottomSheet = true
-                            },
-                            onProfileClick = { userId ->
+                            onProfileClick = {
                                 navController.navigate(Screen.Profile.route)
                             },
-                            onLikeClick = { postId ->
-                                viewModel.onLikePost(postId)
-                            },
+                            onLikeClick = { },
                             onCommentClick = { postId ->
                                 selectedPostIdForComment = postId
                                 showCommentBottomSheet = true
-                            }
+                            },
+                            onShareClick = { },
+                            onEditClick = { },
+                            onDeleteClick = { }
                         )
-                        HorizontalDivider()
                     }
-
                 }
             }
         }
@@ -156,17 +149,7 @@ fun ProfileScreen(
             onDismiss = { showCommentBottomSheet = false; selectedPostIdForComment = null }
         )
     }
-
-    // More BottomSheet
-    if (showMoreBottomSheet && selectedPostIdForMore != null) {
-        PostMoreBottomSheet(
-            postId = selectedPostIdForMore!!,
-            onDismiss = { showMoreBottomSheet = false; selectedPostIdForMore = null }
-        )
-    }
 }
-
-// --- Các Composable con giữ nguyên logic, chỉ sửa type ---
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,7 +158,12 @@ fun ProfileTopBar(navController: NavController) {
         title = { Text("My Profile", fontWeight = FontWeight.Bold) },
         actions = {
             IconButton(
-                onClick = { /*TODO: Navigate to settings*/ },
+                onClick = {
+                    navController.navigate(Screen.Logout.route) {
+                        // optional: đảm bảo chỉ navigate một lần nếu cần
+                        launchSingleTop = true
+                    }
+                },
                 modifier = Modifier.size(36.dp)
             ) {
                 Icon(
@@ -184,15 +172,17 @@ fun ProfileTopBar(navController: NavController) {
                     modifier = Modifier.size(24.dp)
                 )
             }
+
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
     )
 }
 
+
 @Composable
 fun ProfileHeader(
     user: User,
-    stats: List<UserState>
+    states: List<UserState>
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
         Row(
@@ -211,8 +201,8 @@ fun ProfileHeader(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                stats.forEach { stat ->
-                    StateItem(count = stat.count, label = stat.label)
+                states.forEach { state ->
+                    StateItem(count = state.count, label = state.label)
                 }
             }
         }
@@ -220,6 +210,146 @@ fun ProfileHeader(
         Text(user.fullName, fontWeight = FontWeight.Bold)
         Text("@${user.username}", color = Color.Gray)
         user.bio?.let { Text(it) }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun ProfilePostItem(
+    post: PostResponse,
+    onPostClick: (Int) -> Unit, // Đổi tên hàm để rõ ràng hơn
+    onProfileClick: (Int) -> Unit, // Hành động khi click avatar
+    onLikeClick: (Int) -> Unit,    // Hành động khi click like
+    onCommentClick: (Int) -> Unit, // Hành động khi click comment
+    onShareClick: (Int) -> Unit,
+    onEditClick: (Int) -> Unit,
+    onDeleteClick: (Int) -> Unit )
+{
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .wrapContentHeight()
+            .padding(bottom = 16.dp) // Khoảng cách giữa các bài đăng
+    ) {
+
+        // ✅ Header riêng cho ProfileScreen (không còn More)
+        ProfilePostHeaders(
+            author = post.author,
+            postId = post.postId,
+            onProfileClick = onProfileClick,
+            postCreatedAt = post.createdAt ?: "",
+            onShareClick = { onShareClick(post.postId) },
+            onEditClick = { onEditClick(post.postId) },
+            onDeleteClick = { onDeleteClick(post.postId) }
+        )
+
+        // --- Post Image (Clickable) ---
+        val firstImageUrl = post.media.firstOrNull()?.mediaFileUrl
+        if (firstImageUrl != null) {
+            AsyncImage(
+                model = firstImageUrl,
+                contentDescription = "Post image",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .clickable { onPostClick(post.postId) }, // Chỉ click vào ảnh mới mở trang chi tiết
+                contentScale = ContentScale.Fit
+            )
+        }
+        PostActions(
+            likeCount = post.likeCount,
+            commentCount = post.commentCount,
+            onLikeClick = { onLikeClick(post.postId) }, // Truyền hành động click like
+            onCommentClick = { onCommentClick(post.postId) } // Truyền hành động click comment
+        )
+        // --- Caption ---
+        Text(
+            text = post.caption ?: "",
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun ProfilePostHeaders(
+    author: AuthorInfoResponse,
+    postId: Int,
+    onProfileClick: (Int) -> Unit,
+    postCreatedAt: String?,
+    onShareClick: (Int) -> Unit,
+    onEditClick: (Int) -> Unit,
+    onDeleteClick: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { onProfileClick(author.userId) } // Thêm clickable cho cả row
+        ) {
+            // Avatar
+            AsyncImage(
+                model = author.profilePictureUrl,
+                contentDescription = "Profile Image",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            // User Info
+            Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+                Text(
+                    text = author.username,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+                Text(
+                    text = formatTimeAgo(postCreatedAt ?: ""),
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+// --- Action Buttons (Share, Edit, Delete) ---
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { onShareClick(postId) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_share_baiviet),
+                    contentDescription = "Share",
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            IconButton(onClick = { onEditClick(postId) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chinhsua),
+                    contentDescription = "Edit",
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            IconButton(onClick = { onDeleteClick(postId) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_xoa),
+                    contentDescription = "Delete",
+                    tint = Color.Red,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
     }
 }
 
@@ -261,55 +391,17 @@ fun StoryHighlights(stories: List<StoryHighlight>, modifier: Modifier = Modifier
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun MyPostItem(
-    post: PostResponse,
-    onPostClick: (Int) -> Unit,
-    onMoreClick: (Int) -> Unit
-) {
-    Column(modifier = Modifier.background(Color.White)) {
-        // Header bài đăng
-        PostHeader(
-            author = post.author,
-            onProfileClick = { /* TODO */ },
-            onMoreClick = { onMoreClick(post.postId) },
-            postCreatedAt = post.createdAt ?: ""
-        )
-
-        // Ảnh bài đăng
-        val firstImageUrl = post.media.firstOrNull()?.mediaFileUrl
-        if (firstImageUrl != null) {
-            AsyncImage(
-                model = firstImageUrl,
-                contentDescription = "Post image",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        // Action buttons
-        PostActions(
-            likeCount = post.likeCount,
-            commentCount = post.commentCount,
-            onLikeClick = { /*TODO*/ },
-            onCommentClick = { /*TODO*/ }
-        )
-
-        // Caption
-        Text(
-            text = post.caption ?: "",
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        HorizontalDivider()
-    }
-}
-
 data class StoryHighlight(@DrawableRes val imageRes: Int, val label: String)
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ProfileScreenPreview() {
+    val navController = rememberNavController()
+
+    // Gọi màn hình chính với userId mẫu
+    ProfileScreen(
+        navController = navController,
+        userId = 1
+    )
+}

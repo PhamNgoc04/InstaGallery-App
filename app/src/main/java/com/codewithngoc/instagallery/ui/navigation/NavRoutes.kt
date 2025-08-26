@@ -2,7 +2,6 @@ package com.codewithngoc.instagallery.ui.navigation
 
 import android.net.Uri
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,12 +26,20 @@ import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.PostDetailScreen
 import com.codewithngoc.instagallery.ui.features.newpost.NewPostScreen
 import com.codewithngoc.instagallery.ui.features.newpost.editpost.EditPostScreen
+import com.codewithngoc.instagallery.ui.features.profile.LogOutScreen
 import com.codewithngoc.instagallery.ui.features.profile.ProfileScreen
+import com.codewithngoc.instagallery.ui.features.profile.editprofilepost.EditPostProfileScreen
+import com.codewithngoc.instagallery.ui.splash.SplashScreen
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
+
     object Login : Screen("login")
+
     object SignUp : Screen("signup")
+
+    object Logout : Screen("logout")
+
     object HomeFeed : Screen("homefeed")
 
     object PostDetail : Screen("postdetail/{postId}") {
@@ -47,13 +54,16 @@ sealed class Screen(val route: String) {
         fun createRoute(encodedUri: String) = "edit_post_screen/$encodedUri"
     }
 
+    object Splash : Screen("splash")
+
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Auth.route,
+//    startDestination: String = Screen.Auth.route,
+    startDestination: String = Screen.Splash.route,
     modifier: Modifier = Modifier,
     session: InstaGallerySession = hiltViewModel<SignInViewModel>().session
 ) {
@@ -63,6 +73,10 @@ fun AppNavigation(
         startDestination = startDestination,
         modifier = modifier
     ) {
+        composable(Screen.Splash.route) {
+            SplashScreen(navController = navController)
+        }
+
         composable(Screen.Auth.route) {
             AuthScreen(navController = navController)
         }
@@ -76,6 +90,11 @@ fun AppNavigation(
                 navController = navController
             )
         }
+
+        composable(Screen.Logout.route) {
+            LogOutScreen(navController = navController)
+        }
+
 
         composable(Screen.HomeFeed.route) {
             HomeFeedScreen(
@@ -129,6 +148,23 @@ fun AppNavigation(
                     Text("User not logged in")
                 }
             }
+        }
+
+        // Edit Post Screen
+        composable(
+            route = "editPost/{postId}",
+            arguments = listOf(navArgument("postId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+
+            EditPostProfileScreen(
+                // bạn có thể fetch dữ liệu từ postId trong ViewModel
+                onCancel = { navController.popBackStack() },
+                onUpdate = { updatedContent ->
+                    // TODO: Gọi API update bài viết bằng postId + updatedContent
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

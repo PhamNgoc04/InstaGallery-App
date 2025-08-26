@@ -45,7 +45,7 @@ android {
         buildConfig = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
     packaging {
         resources {
@@ -90,7 +90,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.lifecycle.runtime.compose)
-    implementation(libs.material3)
 
     implementation (libs.coil.compose)
 

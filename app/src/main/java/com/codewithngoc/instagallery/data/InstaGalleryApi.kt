@@ -29,6 +29,13 @@ interface InstaGalleryApi {
     @POST("api/auth/register")
     suspend fun signUp(@Body request: SignUpRequest): Response<AuthResponse>
 
+    // ✅ Đăng xuất
+    @POST("api/auth/logout")
+    suspend fun logout(
+        @Header("Authorization") token: String,
+        @Body body: Map<String, String>
+    ): Response<Unit>
+
     // Tạo bài đăng
     @POST("api/posts")
     suspend fun createPost(@Body request: CreatePostRequest): Response<PostResponse>

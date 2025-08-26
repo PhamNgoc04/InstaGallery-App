@@ -2,6 +2,7 @@ package com.codewithngoc.instagallery.ui.features.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.ProfileUiState
 import com.codewithngoc.instagallery.data.model.User
@@ -17,9 +18,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val repository: ProfileRepository
+    private val repository: ProfileRepository,
+    private val session: InstaGallerySession
 ) : ViewModel() {
 
+    // --- Profile State
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState = _uiState.asStateFlow()
 
@@ -36,7 +39,7 @@ class ProfileViewModel @Inject constructor(
 
                 _uiState.value = ProfileUiState.Success(
                     user = userProfile.toUiUser(),
-                    stats = listOf(
+                    states = listOf(
                         UserState(userProfile.postCount.toString(), "Posts"),
                         UserState(userProfile.followerCount.toString(), "Followers"),
                         UserState(userProfile.followingCount.toString(), "Following")
@@ -52,26 +55,19 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun onLikePost(postId: Int) {
-        viewModelScope.launch {
-            val currentState = _uiState.value
-            if (currentState is ProfileUiState.Success) {
-                val updatedPosts = currentState.posts.map { post ->
-                    if (post.postId == postId) post.copy(likeCount = post.likeCount + 1)
-                    else post
-                }
-                _uiState.value = currentState.copy(posts = updatedPosts)
-            }
-        }
-    }
-
-    fun updatePosts(updatedPosts: List<PostResponse>) {
+    fun updateCommentCount(postId: Int) {
         val currentState = _uiState.value
         if (currentState is ProfileUiState.Success) {
+            val updatedPosts = currentState.posts.map { post ->
+                if (post.postId == postId) {
+                    post.copy(commentCount = post.commentCount + 1)
+                } else {
+                    post
+                }
+            }
             _uiState.value = currentState.copy(posts = updatedPosts)
         }
     }
-
 
 }
 

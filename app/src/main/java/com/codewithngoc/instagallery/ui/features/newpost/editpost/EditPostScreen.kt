@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -30,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedViewModel
 import com.codewithngoc.instagallery.ui.floatingLabelTextField.FloatingLabelTextField
@@ -121,13 +123,20 @@ fun EditPostScreen(
             ) {
                 item {
                     AsyncImage(
-                        model = selectedUri,
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(selectedUri)
+                            .crossfade(true)
+                            .build(),
                         contentDescription = "Selected Image",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp),
-                        contentScale = ContentScale.Fit
+                            .height(300.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit,
+                        placeholder = painterResource(R.drawable.placeholder_post),
+                        error = painterResource(R.drawable.error_post)
                     )
+
 
                     TextField(
                         value = caption,
