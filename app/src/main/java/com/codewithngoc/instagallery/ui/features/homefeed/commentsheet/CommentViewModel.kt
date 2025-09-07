@@ -40,6 +40,27 @@ class CommentViewModel @Inject constructor(
     private val _newCommentEvent = MutableSharedFlow<Pair<Int, CommentResponse>>() // postId -> comment
     val newCommentEvent = _newCommentEvent.asSharedFlow()
 
+    // Sắp xếp comment theo cấu trúc cha - con (đệ quy)
+    private fun sortComments(comments: List<CommentResponse>): List<CommentResponse> {
+        val repliesMap = comments.filter { it.parentCommentId != null }.groupBy { it.parentCommentId }
+        val rootComments = comments.filter { it.parentCommentId == null }.sortedByDescending { it.createdAt }
+
+        val sortedList = mutableListOf<CommentResponse>()
+
+        fun addReplies(comment: CommentResponse) {
+            sortedList.add(comment)
+            repliesMap[comment.commentId]?.sortedBy { it.createdAt }?.forEach { reply ->
+                addReplies(reply) // đệ quy với reply
+            }
+        }
+
+        rootComments.forEach { root ->
+            addReplies(root)
+        }
+
+        return sortedList
+    }
+
     // Hàm lấy bình luận
     fun loadComments(postId: Int) {
         viewModelScope.launch {
@@ -49,17 +70,7 @@ class CommentViewModel @Inject constructor(
                 is ApiResponse.Success -> {
                     val comments = response.data
 
-                    // Sắp xếp lại bình luận theo cấu trúc cha-con
-                    val rootComments = comments.filter { it.parentCommentId == null }.sortedByDescending { it.createdAt }
-                    val repliesMap = comments.filter { it.parentCommentId != null }.groupBy { it.parentCommentId }
-
-                    val sortedComments = mutableListOf<CommentResponse>()
-                    rootComments.forEach { root ->
-                        sortedComments.add(root)
-                        repliesMap[root.commentId]?.sortedBy { it.createdAt }?.let { replies ->
-                            sortedComments.addAll(replies)
-                        }
-                    }
+                    val sortedComments = sortComments(comments)
 
                     _commentsMap.value = _commentsMap.value + (postId to sortedComments)
                     _commentEvent.value = CommentEvent.Success

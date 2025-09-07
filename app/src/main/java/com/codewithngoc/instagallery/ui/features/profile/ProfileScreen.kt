@@ -140,6 +140,7 @@ fun ProfileScreen(
                     }
                 }
             }
+            else -> {}
         }
     }
     // Comment BottomSheet
@@ -194,7 +195,8 @@ fun ProfileHeader(
                 contentDescription = "User Avatar",
                 modifier = Modifier
                     .size(90.dp)
-                    .clip(CircleShape)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(16.dp))
             Row(

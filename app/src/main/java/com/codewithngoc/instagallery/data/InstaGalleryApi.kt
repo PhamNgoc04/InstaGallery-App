@@ -14,6 +14,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -30,11 +31,9 @@ interface InstaGalleryApi {
     suspend fun signUp(@Body request: SignUpRequest): Response<AuthResponse>
 
     // ✅ Đăng xuất
+    @Headers("Content-Type: application/json")
     @POST("api/auth/logout")
-    suspend fun logout(
-        @Header("Authorization") token: String,
-        @Body body: Map<String, String>
-    ): Response<Unit>
+    suspend fun logout(@Body body: Map<String, String>): Response<Unit>
 
     // Tạo bài đăng
     @POST("api/posts")
