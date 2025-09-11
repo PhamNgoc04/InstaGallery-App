@@ -50,6 +50,7 @@ import com.codewithngoc.instagallery.data.model.PostVisibility
 import com.codewithngoc.instagallery.data.utils.formatTimeAgo
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentBottomSheet
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentViewModel
+import com.codewithngoc.instagallery.ui.features.homefeed.likeAction.LikeViewModel
 import com.codewithngoc.instagallery.ui.features.homefeed.postmorebottomsheet.PostMoreBottomSheet
 import com.codewithngoc.instagallery.ui.navigation.Screen
 import kotlinx.coroutines.flow.collectLatest
@@ -60,13 +61,17 @@ import java.time.Instant
 @Composable
 fun HomeFeedScreen(
     navController: NavController,
-    viewModel: HomeFeedViewModel = hiltViewModel()
+    viewModel: HomeFeedViewModel = hiltViewModel(),
+    likeViewModel: LikeViewModel = hiltViewModel(),
 ) {
     // Biến trạng thái để hiển thị Loading
     val uiState = viewModel.uiState.collectAsState()
 
     // Biến trạng thái để hiển thị danh sách posts
     val posts by viewModel.posts.collectAsState()
+
+    // Theo dõi trạng thái liked từ LikeViewModel
+    val likedPosts by likeViewModel.likedPosts.collectAsState()
 
     // Biến trạng thái để hiển thị CommentBottomSheet
     var showCommentDialog by remember { mutableStateOf(false) }
@@ -86,6 +91,19 @@ fun HomeFeedScreen(
         commentViewModel.newCommentEvent.collect { (postId, _) ->
             viewModel.updateCommentCount(postId)
         }
+    }
+
+    // Gọi loadLikes & checkLiked khi posts thay đổi
+    LaunchedEffect(posts) {
+        posts.forEach { post ->
+            likeViewModel.loadLikes(post.postId)
+            likeViewModel.checkLiked(post.postId)
+        }
+    }
+
+    // Theo dõi lắng nghe sự kiện từ LikeVieModel
+    LaunchedEffect(Unit) {
+        viewModel.observeLikeEvents(likeViewModel)
     }
 
     // ✅ Theo dõi sự kiện từ HomeFeedViewModel
@@ -125,9 +143,10 @@ fun HomeFeedScreen(
                 else -> {
                     PostList(
                         posts = posts,
+                        likedPosts = likedPosts,
                         onPostClick = { postId -> viewModel.onPostClick(postId) },
                         onProfileClick = { userId -> /* TODO: Navigate to Profile screen */ },
-                        onLikeClick = { postId -> /* TODO: Call ViewModel function to handle like */ },
+                        onLikeClick = { postId -> likeViewModel.toggleLike(postId) },
                         onCommentClick = { postId ->
                             selectedPostIdForComment = postId
                             showCommentDialog = true
@@ -167,6 +186,7 @@ fun HomeFeedScreen(
 fun PostList(
     modifier: Modifier = Modifier,
     posts: List<PostResponse>,
+    likedPosts : Map<Int, Boolean>,
     onPostClick: (Int) -> Unit,
     onProfileClick: (Int) -> Unit,
     onLikeClick: (Int) -> Unit,
@@ -181,8 +201,10 @@ fun PostList(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(posts) { post ->
+            val isLiked = likedPosts[post.postId] ?: false
             PostItem(
                 post = post,
+                isLiked = isLiked,
                 onPostClick = { onPostClick(post.postId) }, // Mở trang chi tiết bài viết khi click vào ảnh
                 onProfileClick = { onProfileClick(post.author.userId) }, // Mở trang cá nhân khi click vào avatar/tên
                 onLikeClick = { onLikeClick(post.postId) }, // Xử lý sự kiện thích bài viết
@@ -197,6 +219,7 @@ fun PostList(
 @Composable
 fun PostItem(
     post: PostResponse,
+    isLiked: Boolean,
     onPostClick: (Int) -> Unit, // Đổi tên hàm để rõ ràng hơn
     onProfileClick: (Int) -> Unit, // Hành động khi click avatar
     onLikeClick: (Int) -> Unit,    // Hành động khi click like
@@ -239,6 +262,7 @@ fun PostItem(
         PostActions(
             likeCount = post.likeCount,
             commentCount = post.commentCount,
+            isLiked = isLiked,
             onLikeClick = { onLikeClick(post.postId) }, // Truyền hành động click like
             onCommentClick = { onCommentClick(post.postId) } // Truyền hành động click comment
         )
@@ -322,6 +346,7 @@ fun PostHeader(
 fun PostActions(
     likeCount: Int,
     commentCount: Int,
+    isLiked: Boolean,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit
 ) {
@@ -338,12 +363,19 @@ fun PostActions(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable { onLikeClick() }
             ) {
-                Image(
-                    painterResource(R.drawable.ic_tymm),
-                    contentDescription = "Like",
-                    modifier = Modifier.size(26.dp)
-                )
+                val likeIcon = if (isLiked) R.drawable.ic_heart_filled else R.drawable.ic_tymm
+                val likeTint = (if (isLiked) Color.Red else Color.Black).also {
+
+                    Icon(
+                        painter = painterResource(likeIcon),
+                        contentDescription = "Like",
+                        tint = it,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+
                 Spacer(modifier = Modifier.width(4.dp))
+
                 Text(
                     text = likeCount.toString(),
                     style = MaterialTheme.typography.bodyMedium,
@@ -547,6 +579,13 @@ fun HomeFeedScreenPreview() {
             createdAt = "2023-08-02T15:30:00Z"
         )
     )
+
+    // ✅ Mock likedPosts để Preview không lỗi
+    val likedPosts = mapOf(
+        1 to true,  // postId 1 đã like
+        2 to false  // postId 2 chưa like
+    )
+
     Scaffold(
         topBar = { HomeInsTopBar() },
         bottomBar = { HomeInsBottomBar(navController = navController) }
@@ -554,6 +593,7 @@ fun HomeFeedScreenPreview() {
         PostList(
             modifier = Modifier.padding(paddingValues),
             posts = samplePosts,
+            likedPosts = likedPosts,
             onPostClick = {},
             onProfileClick = {},
             onLikeClick = {},

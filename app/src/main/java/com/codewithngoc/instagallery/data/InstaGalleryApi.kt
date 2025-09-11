@@ -2,8 +2,12 @@ package com.codewithngoc.instagallery.data
 
 import com.codewithngoc.instagallery.data.model.AddCommentRequest
 import com.codewithngoc.instagallery.data.model.AuthResponse
+import com.codewithngoc.instagallery.data.model.CheckLikedResponse
 import com.codewithngoc.instagallery.data.model.CommentResponse
 import com.codewithngoc.instagallery.data.model.CreatePostRequest
+import com.codewithngoc.instagallery.data.model.LikeCountResponse
+import com.codewithngoc.instagallery.data.model.LikeResponse
+import com.codewithngoc.instagallery.data.model.MessageResponse
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.SignInRequest
 import com.codewithngoc.instagallery.data.model.SignUpRequest
@@ -12,6 +16,7 @@ import com.codewithngoc.instagallery.data.model.UserProfileResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
@@ -64,10 +69,6 @@ interface InstaGalleryApi {
 
     // ✅ API để xóa bình luận
 
-    // ✅ API để like bài đăng
-
-    // ✅ API để unlike bài đăng
-
     // 👤 Lấy thông tin người dùng
     @GET("api/auth/profile/{id}")
     suspend fun getUserProfile(
@@ -81,5 +82,36 @@ interface InstaGalleryApi {
         @Header("Authorization") token: String,
         @Path("id") userId: Int
     ): Response<List<PostResponse>>
+
+    // Lấy danh sách like
+    @GET("api/posts/{postId}/likes")
+    suspend fun getLikes(
+        @Path("postId") postId: Int,
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 20,
+    ) : Response<List<LikeResponse>>
+
+    //Kiểm tra người dùng đã like chưa
+    @GET("api/posts/{postId}/likes/check")
+    suspend fun checkLiked(
+        @Path("postId") postId: Int
+    ) : Response<CheckLikedResponse> // backend trả { "liked": true/false }
+
+    // Like bài viết
+    @POST("api/posts/{postId}/likes")
+    suspend fun likePost(
+        @Path("postId") postId: Int
+    ) : Response<LikeCountResponse> // backend trả về message
+
+    // Bỏ Like bài viết
+    @DELETE("api/posts/{postId}/likes")
+    suspend fun unlikePost(
+        @Path("postId") postId: Int
+    ) : Response<LikeCountResponse>
+
+    @GET("api/posts/{postId}/likes/count")
+    suspend fun getLikeCount(
+        @Path("postId") postId: Int
+    ): Response<Int>
 
 }

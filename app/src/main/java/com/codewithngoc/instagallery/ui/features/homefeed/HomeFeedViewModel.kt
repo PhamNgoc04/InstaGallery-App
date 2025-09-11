@@ -9,14 +9,18 @@ import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.remote.safeApiCall
+import com.codewithngoc.instagallery.data.repository.LikeRepository
 import com.codewithngoc.instagallery.data.repository.PostRepository
+import com.codewithngoc.instagallery.ui.features.homefeed.likeAction.LikeViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,9 +29,9 @@ val newPostSharedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
 @HiltViewModel
 class HomeFeedViewModel @Inject constructor(
-    private val repository: PostRepository,
+    private val postRepository: PostRepository,
     val session: InstaGallerySession,
-    @ApplicationContext val context: Context
+    @ApplicationContext val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PostEvent>(PostEvent.Nothing)
@@ -58,7 +62,7 @@ class HomeFeedViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = PostEvent.Loading
 
-            val response = repository.getAllPosts()
+            val response = postRepository.getAllPosts()
 
             when (response) {
                 is ApiResponse.Success -> {
@@ -111,7 +115,6 @@ class HomeFeedViewModel @Inject constructor(
         _posts.value = updatedPosts
     }
 
-
     private fun Int.getFeedErrorMessage(): String {
         return when (this) {
             400 -> context.getString(R.string.feed_failed_invalid_request)
@@ -121,12 +124,31 @@ class HomeFeedViewModel @Inject constructor(
         }
     }
 
-
     sealed class PostEvent {
         object Nothing : PostEvent()
         object Success : PostEvent()
         data class Error(val message: String) : PostEvent()
         object Loading : PostEvent()
+    }
+
+
+    // Hàm lắng nghe sự kiện từ LikeViewModel
+    fun observeLikeEvents(likeViewModel: LikeViewModel) {
+        viewModelScope.launch {
+            likeViewModel.likeEvent.collect { (postId, newLikeCount) ->
+                // Cập nhật danh sách posts
+                _posts.update { currentPosts ->
+                    currentPosts.map { post ->
+                        if (post.postId == postId) {
+                            // Cập nhật likeCount cho bài đăng đó
+                            post.copy(likeCount = newLikeCount)
+                        } else {
+                            post
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }

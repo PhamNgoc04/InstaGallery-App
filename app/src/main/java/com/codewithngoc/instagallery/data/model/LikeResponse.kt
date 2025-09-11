@@ -5,7 +5,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LikeResponse (
     val userId: Int,
-    val username: String,
-    val fullName: String,
+    val username: String?,
+    val fullName: String?,
     val profilePictureUrl: String?
 )
+
+@Serializable
+data class CheckLikedResponse(
+    val liked: Boolean
+)
+
+@Serializable
+data class LikeCountResponse(val likeCount: Int)

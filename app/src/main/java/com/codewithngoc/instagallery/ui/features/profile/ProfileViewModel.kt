@@ -10,6 +10,7 @@ import com.codewithngoc.instagallery.data.model.UserProfileResponse
 import com.codewithngoc.instagallery.data.model.UserState
 import com.codewithngoc.instagallery.data.repository.ProfileRepository
 import com.codewithngoc.instagallery.data.remote.ApiResponse
+import com.codewithngoc.instagallery.ui.features.homefeed.likeAction.LikeViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,6 +67,22 @@ class ProfileViewModel @Inject constructor(
                 }
             }
             _uiState.value = currentState.copy(posts = updatedPosts)
+        }
+    }
+
+    // ✅ Lắng nghe sự kiện like từ LikeViewModel
+    fun observeLikeEvents(likeViewModel: LikeViewModel) {
+        viewModelScope.launch {
+            likeViewModel.likeEvent.collect { (postId, newLikeCount) ->
+                val currentState = _uiState.value
+                if (currentState is ProfileUiState.Success) {
+                    val updatedPosts = currentState.posts.map { post ->
+                        if (post.postId == postId) post.copy(likeCount = newLikeCount)
+                        else post
+                    }
+                    _uiState.value = currentState.copy(posts = updatedPosts)
+                }
+            }
         }
     }
 

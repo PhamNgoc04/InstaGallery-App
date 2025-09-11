@@ -40,6 +40,7 @@ import com.codewithngoc.instagallery.ui.features.homefeed.PostHeader
 import com.codewithngoc.instagallery.ui.features.homefeed.PostItem
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentBottomSheet
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentViewModel
+import com.codewithngoc.instagallery.ui.features.homefeed.likeAction.LikeViewModel
 import com.codewithngoc.instagallery.ui.features.homefeed.postmorebottomsheet.PostMoreBottomSheet
 import com.codewithngoc.instagallery.ui.navigation.Screen
 
@@ -49,9 +50,13 @@ import com.codewithngoc.instagallery.ui.navigation.Screen
 fun ProfileScreen(
     navController: NavController,
     userId: Int,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    likeViewModel : LikeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // ✅ Theo dõi likedPosts từ LikeViewModel
+    val likedPosts by likeViewModel.likedPosts.collectAsState()
 
     // State cho BottomSheet
     var showCommentBottomSheet by remember { mutableStateOf(false) }
@@ -65,9 +70,23 @@ fun ProfileScreen(
         viewModel.loadProfile(userId)
     }
 
+    // Theo dõi lắng nghe sự kiện từ LikeVieModel
+    LaunchedEffect(Unit) {
+        viewModel.observeLikeEvents(likeViewModel)
+    }
+
     LaunchedEffect(Unit) {
         commentViewModel.newCommentEvent.collect { (postId, _) ->
             viewModel.updateCommentCount(postId)
+        }
+    }
+
+    // 🔹 Khi danh sách posts trong profile thay đổi -> load likes & check liked
+    LaunchedEffect(state) {
+        val success = state as? ProfileUiState.Success
+        success?.posts?.forEach { post ->
+            likeViewModel.loadLikes(post.postId)
+            likeViewModel.checkLiked(post.postId)
         }
     }
 
@@ -120,15 +139,19 @@ fun ProfileScreen(
                     }
                     // 4. Danh sách bài đăng
                     items(items = success.posts, key = { it.postId }) { post ->
+
+                        val isLiked = likedPosts[post.postId] ?: false
+
                         ProfilePostItem (
                             post = post,
+                            isLiked = isLiked,
                             onPostClick = { postId ->
                                 navController.navigate(Screen.PostDetail.createRoute(postId.toString()))
                             },
                             onProfileClick = {
                                 navController.navigate(Screen.Profile.route)
                             },
-                            onLikeClick = { },
+                            onLikeClick = { postId -> likeViewModel.toggleLike(postId) },
                             onCommentClick = { postId ->
                                 selectedPostIdForComment = postId
                                 showCommentBottomSheet = true
@@ -219,6 +242,7 @@ fun ProfileHeader(
 @Composable
 fun ProfilePostItem(
     post: PostResponse,
+    isLiked : Boolean,
     onPostClick: (Int) -> Unit, // Đổi tên hàm để rõ ràng hơn
     onProfileClick: (Int) -> Unit, // Hành động khi click avatar
     onLikeClick: (Int) -> Unit,    // Hành động khi click like
@@ -262,6 +286,7 @@ fun ProfilePostItem(
         PostActions(
             likeCount = post.likeCount,
             commentCount = post.commentCount,
+            isLiked = isLiked,
             onLikeClick = { onLikeClick(post.postId) }, // Truyền hành động click like
             onCommentClick = { onCommentClick(post.postId) } // Truyền hành động click comment
         )
