@@ -85,7 +85,6 @@ fun ProfileScreen(
     LaunchedEffect(state) {
         val success = state as? ProfileUiState.Success
         success?.posts?.forEach { post ->
-            likeViewModel.loadLikes(post.postId)
             likeViewModel.checkLiked(post.postId)
         }
     }

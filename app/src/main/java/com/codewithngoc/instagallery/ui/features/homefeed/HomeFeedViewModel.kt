@@ -132,16 +132,14 @@ class HomeFeedViewModel @Inject constructor(
     }
 
 
-    // Hàm lắng nghe sự kiện từ LikeViewModel
+    // ✅ Hàm lắng nghe sự kiện từ LikeViewModel
     fun observeLikeEvents(likeViewModel: LikeViewModel) {
         viewModelScope.launch {
-            likeViewModel.likeEvent.collect { (postId, newLikeCount) ->
-                // Cập nhật danh sách posts
+            likeViewModel.likeEvent.collect { (postId, likeChange) ->
                 _posts.update { currentPosts ->
                     currentPosts.map { post ->
                         if (post.postId == postId) {
-                            // Cập nhật likeCount cho bài đăng đó
-                            post.copy(likeCount = newLikeCount)
+                            post.copy(likeCount = post.likeCount + likeChange)
                         } else {
                             post
                         }

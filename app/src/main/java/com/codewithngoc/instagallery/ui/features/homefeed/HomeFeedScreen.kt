@@ -96,14 +96,19 @@ fun HomeFeedScreen(
     // Gọi loadLikes & checkLiked khi posts thay đổi
     LaunchedEffect(posts) {
         posts.forEach { post ->
-            likeViewModel.loadLikes(post.postId)
             likeViewModel.checkLiked(post.postId)
         }
     }
 
     // Theo dõi lắng nghe sự kiện từ LikeVieModel
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel, likeViewModel) {
         viewModel.observeLikeEvents(likeViewModel)
+    }
+
+    LaunchedEffect(posts) {
+        posts.forEach { post ->
+            likeViewModel.checkLiked(post.postId)
+        }
     }
 
     // ✅ Theo dõi sự kiện từ HomeFeedViewModel

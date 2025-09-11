@@ -35,24 +35,24 @@ class LikeViewModel @Inject constructor(
     private val _likeEvent = MutableSharedFlow<Pair<Int, Int>>()   // (postId, newLikeCount)
     val likeEvent: SharedFlow<Pair<Int, Int>> = _likeEvent.asSharedFlow()
 
-    fun loadLikes(postId: Int) {
-        viewModelScope.launch {
-            _likeState.value = LikeEvent.Loading
-            when (val response = likeRepository.getLikes(postId, 1, 20)) {
-                is ApiResponse.Success -> {
-                    _likeState.value = LikeEvent.LikesLoaded(response.data)
-                }
-                is ApiResponse.Error -> {
-                    _likeState.value = LikeEvent.Error(response.message)
-                }
-                is ApiResponse.Exception -> {
-                    _likeState.value = LikeEvent.Error(
-                        context.getString(R.string.feed_failed_network_error)
-                    )
-                }
-            }
-        }
-    }
+//    fun loadLikes(postId: Int) {
+//        viewModelScope.launch {
+//            _likeState.value = LikeEvent.Loading
+//            when (val response = likeRepository.getLikes(postId, 1, 20)) {
+//                is ApiResponse.Success -> {
+//                    _likeState.value = LikeEvent.LikesLoaded(response.data)
+//                }
+//                is ApiResponse.Error -> {
+//                    _likeState.value = LikeEvent.Error(response.message)
+//                }
+//                is ApiResponse.Exception -> {
+//                    _likeState.value = LikeEvent.Error(
+//                        context.getString(R.string.feed_failed_network_error)
+//                    )
+//                }
+//            }
+//        }
+//    }
 
     fun checkLiked(postId: Int) {
         viewModelScope.launch {
@@ -62,18 +62,6 @@ class LikeViewModel @Inject constructor(
                         .apply { put(postId, response.data.liked) }
                 }
                 else -> { /* ignore */ }
-            }
-        }
-    }
-
-
-    // Fetch số like hiện tại từ server
-    fun fetchLikeCount(postId: Int) {
-        viewModelScope.launch {
-            when (val response = likeRepository.getLikeCount(postId)) {
-                is ApiResponse.Success -> _likeEvent.emit(postId to response.data)
-                is ApiResponse.Error -> { /* handle error */ }
-                is ApiResponse.Exception -> { /* handle network error */ }
             }
         }
     }
@@ -88,11 +76,8 @@ class LikeViewModel @Inject constructor(
                         _likedPosts.value = _likedPosts.value.toMutableMap()
                             .apply { put(postId, false) }
 
-                        // Lấy số like mới từ server
-                        val newCount: Int = response.data.likeCount
-                        _likeEvent.emit(postId to newCount)
-
-
+                        // ✅ Gửi sự kiện giảm 1 like sau khi bỏ thích thành công
+                        _likeEvent.emit(postId to -1)
                         _likeState.value = LikeEvent.ActionSuccess(MessageResponse("💔 Bỏ like thành công"))
                     }
                     is ApiResponse.Error -> {
@@ -111,9 +96,8 @@ class LikeViewModel @Inject constructor(
                         _likedPosts.value = _likedPosts.value.toMutableMap()
                             .apply { put(postId, true) }
 
-                        val newCount: Int = response.data.likeCount
-                        _likeEvent.emit(postId to newCount)
-
+                        // ✅ Gửi sự kiện tăng 1 like sau khi thích thành công
+                        _likeEvent.emit(postId to 1)
                         _likeState.value = LikeEvent.ActionSuccess(MessageResponse("❤️ Like thành công"))
                     }
                     is ApiResponse.Error -> {
