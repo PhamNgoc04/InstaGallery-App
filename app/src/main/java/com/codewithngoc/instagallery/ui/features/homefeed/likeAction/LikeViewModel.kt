@@ -24,6 +24,7 @@ class LikeViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
+    // Trạng thái like action
     private val _likeState = MutableStateFlow<LikeEvent>(LikeEvent.Nothing)
     val likeState = _likeState.asStateFlow()
 
@@ -32,27 +33,8 @@ class LikeViewModel @Inject constructor(
     val likedPosts = _likedPosts.asStateFlow()
 
     // Flow để HomeFeedViewModel lắng nghe số like mới
-    private val _likeEvent = MutableSharedFlow<Pair<Int, Int>>()   // (postId, newLikeCount)
+    private val _likeEvent = MutableSharedFlow<Pair<Int, Int>>(extraBufferCapacity = 10)   // (postId, newLikeCount)
     val likeEvent: SharedFlow<Pair<Int, Int>> = _likeEvent.asSharedFlow()
-
-//    fun loadLikes(postId: Int) {
-//        viewModelScope.launch {
-//            _likeState.value = LikeEvent.Loading
-//            when (val response = likeRepository.getLikes(postId, 1, 20)) {
-//                is ApiResponse.Success -> {
-//                    _likeState.value = LikeEvent.LikesLoaded(response.data)
-//                }
-//                is ApiResponse.Error -> {
-//                    _likeState.value = LikeEvent.Error(response.message)
-//                }
-//                is ApiResponse.Exception -> {
-//                    _likeState.value = LikeEvent.Error(
-//                        context.getString(R.string.feed_failed_network_error)
-//                    )
-//                }
-//            }
-//        }
-//    }
 
     fun checkLiked(postId: Int) {
         viewModelScope.launch {
@@ -66,49 +48,37 @@ class LikeViewModel @Inject constructor(
         }
     }
 
-    fun toggleLike(postId: Int) {
+    // Toggle like/unlike
+    fun toggleLike(postId: Int, currentLikeCount: Int) {
         viewModelScope.launch {
             val isLiked = _likedPosts.value[postId] ?: false
-            if (isLiked) {
-                when (val response = likeRepository.unlikePost(postId)) {
-                    is ApiResponse.Success -> {
-                        // ✅ Cập nhật trạng thái likedPosts
-                        _likedPosts.value = _likedPosts.value.toMutableMap()
-                            .apply { put(postId, false) }
 
-                        // ✅ Gửi sự kiện giảm 1 like sau khi bỏ thích thành công
-                        _likeEvent.emit(postId to -1)
-                        _likeState.value = LikeEvent.ActionSuccess(MessageResponse("💔 Bỏ like thành công"))
-                    }
-                    is ApiResponse.Error -> {
-                        _likeState.value = LikeEvent.Error(response.message)
-                    }
-                    is ApiResponse.Exception -> {
-                        _likeState.value = LikeEvent.Error(
-                            context.getString(R.string.feed_failed_network_error)
-                        )
-                    }
-                }
-            } else {
-                when (val response = likeRepository.likePost(postId)) {
-                    is ApiResponse.Success -> {
-                        // ✅ Cập nhật trạng thái likedPosts
-                        _likedPosts.value = _likedPosts.value.toMutableMap()
-                            .apply { put(postId, true) }
+            // ✅ Cập nhật cục bộ UI trước
+            val tempChange = if (isLiked) -1 else 1
+            _likeEvent.emit(postId to (currentLikeCount + tempChange))
 
-                        // ✅ Gửi sự kiện tăng 1 like sau khi thích thành công
-                        _likeEvent.emit(postId to 1)
-                        _likeState.value = LikeEvent.ActionSuccess(MessageResponse("❤️ Like thành công"))
-                    }
-                    is ApiResponse.Error -> {
-                        _likeState.value = LikeEvent.Error(response.message)
-                    }
-                    is ApiResponse.Exception -> {
-                        _likeState.value = LikeEvent.Error(
-                            context.getString(R.string.feed_failed_network_error)
-                        )
-                    }
+            val response = if (isLiked) likeRepository.unlikePost(postId)
+            else likeRepository.likePost(postId)
+
+            when(response) {
+                is ApiResponse.Success -> {
+                    // ✅ Cập nhật trạng thái liked
+                    _likedPosts.value = _likedPosts.value.toMutableMap().apply { put(postId, !isLiked) }
+
+                    // ✅ Lấy số like thật từ server
+                    val countResponse = likeRepository.getLikeCount(postId)
+                    val newCount = if (countResponse is ApiResponse.Success) countResponse.data else currentLikeCount + tempChange
+
+                    _likeEvent.emit(postId to newCount)
+
+                    _likeState.value = LikeEvent.ActionSuccess(
+                        MessageResponse(if (isLiked) "💔 Bỏ like thành công" else "❤️ Like thành công")
+                    )
                 }
+                is ApiResponse.Error -> _likeState.value = LikeEvent.Error(response.message)
+                is ApiResponse.Exception -> _likeState.value = LikeEvent.Error(
+                    context.getString(R.string.feed_failed_network_error)
+                )
             }
         }
     }

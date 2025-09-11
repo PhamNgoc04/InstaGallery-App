@@ -150,7 +150,9 @@ fun ProfileScreen(
                             onProfileClick = {
                                 navController.navigate(Screen.Profile.route)
                             },
-                            onLikeClick = { postId -> likeViewModel.toggleLike(postId) },
+                            onLikeClick = {
+                                likeViewModel.toggleLike(post.postId, post.likeCount)
+                            },
                             onCommentClick = { postId ->
                                 selectedPostIdForComment = postId
                                 showCommentBottomSheet = true

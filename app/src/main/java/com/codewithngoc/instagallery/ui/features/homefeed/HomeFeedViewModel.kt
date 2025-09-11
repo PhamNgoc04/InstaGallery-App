@@ -47,7 +47,6 @@ class HomeFeedViewModel @Inject constructor(
         data class NavigateToPostDetail(val postId: String) : HomeFeedNavigationEvent()
     }
 
-
     init {
         viewModelScope.launch {
             newPostSharedFlow.collectLatest {
@@ -115,6 +114,20 @@ class HomeFeedViewModel @Inject constructor(
         _posts.value = updatedPosts
     }
 
+    // ✅ Hàm lắng nghe LikeViewModel để cập nhật like realtime
+    fun observeLikeEvents(likeViewModel: LikeViewModel) {
+        viewModelScope.launch {
+            likeViewModel.likeEvent.collect { (postId, newLikeCount) ->
+                _posts.update { currentPosts ->
+                    currentPosts.map { post ->
+                        if (post.postId == postId) post.copy(likeCount = newLikeCount)
+                        else post
+                    }
+                }
+            }
+        }
+    }
+
     private fun Int.getFeedErrorMessage(): String {
         return when (this) {
             400 -> context.getString(R.string.feed_failed_invalid_request)
@@ -129,24 +142,6 @@ class HomeFeedViewModel @Inject constructor(
         object Success : PostEvent()
         data class Error(val message: String) : PostEvent()
         object Loading : PostEvent()
-    }
-
-
-    // ✅ Hàm lắng nghe sự kiện từ LikeViewModel
-    fun observeLikeEvents(likeViewModel: LikeViewModel) {
-        viewModelScope.launch {
-            likeViewModel.likeEvent.collect { (postId, likeChange) ->
-                _posts.update { currentPosts ->
-                    currentPosts.map { post ->
-                        if (post.postId == postId) {
-                            post.copy(likeCount = post.likeCount + likeChange)
-                        } else {
-                            post
-                        }
-                    }
-                }
-            }
-        }
     }
 
 }

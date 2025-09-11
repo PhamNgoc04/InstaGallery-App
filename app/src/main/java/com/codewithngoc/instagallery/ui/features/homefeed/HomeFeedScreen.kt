@@ -86,32 +86,26 @@ fun HomeFeedScreen(
     var showMoreBottomSheet by remember { mutableStateOf(false) }
     var selectedPostIdForMore by remember { mutableStateOf<Int?>(null) }
 
-    // ✅ Theo dõi sự kiện từ CommentViewModel
+    // 1. Theo dõi sự kiện từ CommentViewModel
     LaunchedEffect(Unit) {
         commentViewModel.newCommentEvent.collect { (postId, _) ->
             viewModel.updateCommentCount(postId)
         }
     }
 
-    // Gọi loadLikes & checkLiked khi posts thay đổi
+    // 2. Gọi loadLikes & checkLiked khi posts thay đổi
     LaunchedEffect(posts) {
         posts.forEach { post ->
             likeViewModel.checkLiked(post.postId)
         }
     }
 
-    // Theo dõi lắng nghe sự kiện từ LikeVieModel
+    // 3. Theo dõi lắng nghe sự kiện từ LikeVieModel
     LaunchedEffect(viewModel, likeViewModel) {
         viewModel.observeLikeEvents(likeViewModel)
     }
 
-    LaunchedEffect(posts) {
-        posts.forEach { post ->
-            likeViewModel.checkLiked(post.postId)
-        }
-    }
-
-    // ✅ Theo dõi sự kiện từ HomeFeedViewModel
+    // 4. Theo dõi sự kiện từ HomeFeedViewModel
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collectLatest { event ->
             when (event) {
@@ -123,10 +117,6 @@ fun HomeFeedScreen(
             }
         }
     }
-
-//    LaunchedEffect(Unit) {
-//        viewModel.loadAllPosts()
-//    }
 
     // Hiển thị Scaffold
     Scaffold(
@@ -151,7 +141,10 @@ fun HomeFeedScreen(
                         likedPosts = likedPosts,
                         onPostClick = { postId -> viewModel.onPostClick(postId) },
                         onProfileClick = { userId -> /* TODO: Navigate to Profile screen */ },
-                        onLikeClick = { postId -> likeViewModel.toggleLike(postId) },
+                        onLikeClick = { post ->
+                            // ✅ Truyền postId và likeCount hiện tại để LikeViewModel cập nhật chính xác
+                            likeViewModel.toggleLike(post.postId, post.likeCount)
+                        },
                         onCommentClick = { postId ->
                             selectedPostIdForComment = postId
                             showCommentDialog = true
@@ -194,7 +187,7 @@ fun PostList(
     likedPosts : Map<Int, Boolean>,
     onPostClick: (Int) -> Unit,
     onProfileClick: (Int) -> Unit,
-    onLikeClick: (Int) -> Unit,
+    onLikeClick: (PostResponse) -> Unit,
     onCommentClick: (Int) -> Unit,
     onMoreClick: (Int) -> Unit,
 ) {
@@ -212,7 +205,7 @@ fun PostList(
                 isLiked = isLiked,
                 onPostClick = { onPostClick(post.postId) }, // Mở trang chi tiết bài viết khi click vào ảnh
                 onProfileClick = { onProfileClick(post.author.userId) }, // Mở trang cá nhân khi click vào avatar/tên
-                onLikeClick = { onLikeClick(post.postId) }, // Xử lý sự kiện thích bài viết
+                onLikeClick = { onLikeClick(post) }, // Xử lý sự kiện thích bài viết
                 onCommentClick = { onCommentClick(post.postId) }, // Xử lý sự kiện bình luận
                 onMoreClick = { onMoreClick(post.postId) } // Xử lý sự kiện click More
             )
@@ -227,7 +220,7 @@ fun PostItem(
     isLiked: Boolean,
     onPostClick: (Int) -> Unit, // Đổi tên hàm để rõ ràng hơn
     onProfileClick: (Int) -> Unit, // Hành động khi click avatar
-    onLikeClick: (Int) -> Unit,    // Hành động khi click like
+    onLikeClick: (PostResponse) -> Unit,    // Hành động khi click like
     onCommentClick: (Int) -> Unit, // Hành động khi click comment
     onMoreClick: (Int) -> Unit, // Hành động khi click More
 ) {
@@ -268,7 +261,7 @@ fun PostItem(
             likeCount = post.likeCount,
             commentCount = post.commentCount,
             isLiked = isLiked,
-            onLikeClick = { onLikeClick(post.postId) }, // Truyền hành động click like
+            onLikeClick = { onLikeClick(post) }, // Truyền hành động click like
             onCommentClick = { onCommentClick(post.postId) } // Truyền hành động click comment
         )
         // --- Caption ---

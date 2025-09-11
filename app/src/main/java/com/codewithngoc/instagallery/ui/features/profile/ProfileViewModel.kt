@@ -70,14 +70,14 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // ✅ Lắng nghe sự kiện like từ LikeViewModel
+    // ✅ Lắng nghe LikeViewModel để cập nhật like realtime
     fun observeLikeEvents(likeViewModel: LikeViewModel) {
         viewModelScope.launch {
-            likeViewModel.likeEvent.collect { (postId, newLikeCount) ->
+            likeViewModel.likeEvent.collect { (postId, newCount) ->
                 val currentState = _uiState.value
                 if (currentState is ProfileUiState.Success) {
                     val updatedPosts = currentState.posts.map { post ->
-                        if (post.postId == postId) post.copy(likeCount = newLikeCount)
+                        if (post.postId == postId) post.copy(likeCount = newCount)
                         else post
                     }
                     _uiState.value = currentState.copy(posts = updatedPosts)
