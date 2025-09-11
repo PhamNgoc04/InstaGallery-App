@@ -1,4 +1,4 @@
 package com.codewithngoc.instagallery.data.repository
 
-class LikeRepository {
+class LikeRepository{
 }
