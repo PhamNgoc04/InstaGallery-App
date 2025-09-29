@@ -252,7 +252,7 @@ fun PostItem(
                     .height(300.dp)
 //                    .clip(RoundedCornerShape(12.dp)) // optional cho đẹp
                     .clickable { onPostClick(post.postId) },
-                contentScale = ContentScale.Crop, // Fit nhìn dễ lỗi layout, Crop thường đẹp hơn
+                contentScale = ContentScale.Fit, // Fit nhìn dễ lỗi layout, Crop thường đẹp hơn
                 placeholder = painterResource(R.drawable.placeholder_post),
                 error = painterResource(R.drawable.ic_error) // ✅ thay bằng 1 vector drawable
             )

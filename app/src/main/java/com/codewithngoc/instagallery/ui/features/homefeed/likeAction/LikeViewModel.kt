@@ -36,6 +36,7 @@ class LikeViewModel @Inject constructor(
     private val _likeEvent = MutableSharedFlow<Pair<Int, Int>>(extraBufferCapacity = 10)   // (postId, newLikeCount)
     val likeEvent: SharedFlow<Pair<Int, Int>> = _likeEvent.asSharedFlow()
 
+    // Kiểm tra đã like chưa
     fun checkLiked(postId: Int) {
         viewModelScope.launch {
             when (val response = likeRepository.checkLiked(postId)) {
@@ -49,6 +50,7 @@ class LikeViewModel @Inject constructor(
     }
 
     // Toggle like/unlike
+    // Chức năng: Cập nhật tạm thời UI ngay, gọi API like/unlike và lấy số like thật từ server
     fun toggleLike(postId: Int, currentLikeCount: Int) {
         viewModelScope.launch {
             val isLiked = _likedPosts.value[postId] ?: false

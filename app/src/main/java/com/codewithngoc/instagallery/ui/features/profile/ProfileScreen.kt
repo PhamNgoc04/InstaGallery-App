@@ -158,7 +158,11 @@ fun ProfileScreen(
                                 showCommentBottomSheet = true
                             },
                             onShareClick = { },
-                            onEditClick = { },
+                            onEditClick = {
+                                navController.navigate(
+                                    Screen.EditPostProfile.route
+                                )
+                            },
                             onDeleteClick = { }
                         )
                     }

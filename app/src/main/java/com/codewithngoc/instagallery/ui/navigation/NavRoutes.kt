@@ -56,6 +56,10 @@ sealed class Screen(val route: String) {
 
     object Splash : Screen("splash")
 
+    object EditPostProfile : Screen("editPost/{postId}") {
+        fun createRoute(postId: String) = "editPost/$postId"
+    }
+
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -162,6 +166,22 @@ fun AppNavigation(
                 onCancel = { navController.popBackStack() },
                 onUpdate = { updatedContent ->
                     // TODO: Gọi API update bài viết bằng postId + updatedContent
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = Screen.EditPostProfile.route,
+            arguments = listOf(navArgument("postId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+
+            EditPostProfileScreen(
+                // bạn có thể fetch dữ liệu từ postId trong ViewModel
+                onCancel = { },
+                onUpdate = { },
+                onBack = {
                     navController.popBackStack()
                 }
             )
