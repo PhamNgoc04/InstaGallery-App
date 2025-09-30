@@ -9,6 +9,10 @@ import javax.inject.Inject
 class PostRepository @Inject constructor(
     private val api: InstaGalleryApi
 ) {
+    suspend fun getPostById(postId: Int): ApiResponse<PostResponse> {
+        return safeApiCall { api.getPostById(postId) }
+    }
+
     suspend fun getAllPosts(): ApiResponse<List<PostResponse>> {
         return safeApiCall { api.getAllPosts() }
     }

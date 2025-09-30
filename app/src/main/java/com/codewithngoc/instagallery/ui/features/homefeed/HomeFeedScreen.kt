@@ -62,8 +62,15 @@ import java.time.Instant
 fun HomeFeedScreen(
     navController: NavController,
     viewModel: HomeFeedViewModel = hiltViewModel(),
-    likeViewModel: LikeViewModel = hiltViewModel(),
 ) {
+
+    val mainGraphBackStackEntry = remember(navController.currentBackStackEntry) {
+        navController.getBackStackEntry("main_graph")
+    }
+
+    val likeViewModel: LikeViewModel = hiltViewModel(mainGraphBackStackEntry)
+
+
     // Biến trạng thái để hiển thị Loading
     val uiState = viewModel.uiState.collectAsState()
 
@@ -100,7 +107,7 @@ fun HomeFeedScreen(
         }
     }
 
-    // 3. Theo dõi lắng nghe sự kiện từ LikeVieModel
+    // 3. Theo dõi lắng nghe sự kiện từ LikeViewModel
     LaunchedEffect(viewModel, likeViewModel) {
         viewModel.observeLikeEvents(likeViewModel)
     }
@@ -337,8 +344,6 @@ fun PostHeader(
 
     }
 }
-
-
 
 @Composable
 fun PostActions(

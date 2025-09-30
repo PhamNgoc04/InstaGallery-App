@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navigation
 import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.ui.features.auth.AuthScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
@@ -111,103 +112,92 @@ fun AppNavigation(
         }
 
 
-        composable(Screen.HomeFeed.route) {
-            HomeFeedScreen(
-                navController = navController
-            )
-        }
-
-        composable(Screen.News.route) {
-            NewsScreen(
-                navController = navController
-            )
-        }
-
-        composable(
-            route = Screen.PostDetail.route,
-            arguments = listOf(navArgument("postId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val postId = backStackEntry.arguments?.getString("postId") ?: ""
-            PostDetailScreen(postId = postId, navController = navController)
-        }
-
-        composable(Screen.NewPost.route) {
-            NewPostScreen(navController)
-        }
-
-        composable(
-            route = Screen.EditPost.route,
-            arguments = listOf(navArgument("encodedUri") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val encodedUri = backStackEntry.arguments?.getString("encodedUri") ?: ""
-            val uriString = Uri.decode(encodedUri)
-            val uri = Uri.parse(uriString)
-            EditPostScreen(selectedUri = uri, navController = navController)
-        }
-
-        composable(
-            route = Screen.Profile.route
+        navigation(
+            route = "main_graph",
+            startDestination = Screen.HomeFeed.route
         ) {
+            composable(Screen.HomeFeed.route) {
+                HomeFeedScreen(
+                    navController = navController
+                )
+            }
 
-            val currentUserId = session.getUserId()?.toIntOrNull()
+            composable(Screen.News.route) {
+                NewsScreen(
+                    navController = navController
+                )
+            }
 
-            // Kiểm tra và truyền userId vào ProfileScreen
-            if (currentUserId != null) {
-                ProfileScreen(navController, userId = currentUserId)
-            } else {
-                // Xử lý trường hợp không có userId
-                LaunchedEffect(Unit) {
-                    // Chuyển hướng về màn hình đăng nhập
-                    navController.navigate(Screen.Login.route) {
-                        // Xóa các màn hình trước đó khỏi back stack
-                        popUpTo(navController.graph.startDestinationId) {
-                            inclusive = true
+            composable(
+                route = Screen.PostDetail.route,
+                arguments = listOf(navArgument("postId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                PostDetailScreen(navController = navController)
+            }
+
+            composable(Screen.NewPost.route) {
+                NewPostScreen(navController)
+            }
+
+            composable(
+                route = Screen.EditPost.route,
+                arguments = listOf(navArgument("encodedUri") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val encodedUri = backStackEntry.arguments?.getString("encodedUri") ?: ""
+                val uriString = Uri.decode(encodedUri)
+                val uri = Uri.parse(uriString)
+                EditPostScreen(selectedUri = uri, navController = navController)
+            }
+
+            composable(
+                route = Screen.Profile.route
+            ) {
+
+                val currentUserId = session.getUserId()?.toIntOrNull()
+
+                // Kiểm tra và truyền userId vào ProfileScreen
+                if (currentUserId != null) {
+                    ProfileScreen(navController, userId = currentUserId)
+                } else {
+                    // Xử lý trường hợp không có userId
+                    LaunchedEffect(Unit) {
+                        // Chuyển hướng về màn hình đăng nhập
+                        navController.navigate(Screen.Login.route) {
+                            // Xóa các màn hình trước đó khỏi back stack
+                            popUpTo(navController.graph.startDestinationId) {
+                                inclusive = true
+                            }
                         }
                     }
-                }
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("User not logged in")
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("User not logged in")
+                    }
                 }
             }
-        }
 
-        // Edit Post Screen
-        composable(
-            route = "editPost/{postId}",
-            arguments = listOf(navArgument("postId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+            // Edit Post from Profile Screen
+            composable(
+                route = Screen.EditPostProfile.route,
+                arguments = listOf(navArgument("postId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
 
-            EditPostProfileScreen(
-                // bạn có thể fetch dữ liệu từ postId trong ViewModel
-                onCancel = { navController.popBackStack() },
-                onUpdate = { updatedContent ->
-                    // TODO: Gọi API update bài viết bằng postId + updatedContent
-                    navController.popBackStack()
-                }
-            )
-        }
+                EditPostProfileScreen(
+                    // bạn có thể fetch dữ liệu từ postId trong ViewModel
+                    onCancel = { },
+                    onUpdate = { updatedContent ->
+                        navController.popBackStack()
+                    },
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
 
-        // Edit Post from Profile Screen
-        composable(
-            route = Screen.EditPostProfile.route,
-            arguments = listOf(navArgument("postId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val postId = backStackEntry.arguments?.getString("postId") ?: ""
-
-            EditPostProfileScreen(
-                // bạn có thể fetch dữ liệu từ postId trong ViewModel
-                onCancel = { },
-                onUpdate = { },
-                onBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        // Settings Screen
-        composable(Screen.Settings.route) {
-            SettingsScreen(navController = navController)
+            // Settings Screen
+            composable(Screen.Settings.route) {
+                SettingsScreen(navController = navController)
+            }
         }
     }
 }

@@ -48,6 +48,11 @@ interface InstaGalleryApi {
     @POST("api/upload")
     suspend fun uploadFile(@Part file: MultipartBody.Part): Response<UploadResponse>
 
+    //Lấy bài đăng theo ID
+    @GET("api/posts/{postId}")
+    suspend fun getPostById(@Path("postId") postId: Int): Response<PostResponse>
+
+
     // Lấy tất cả bài đăng
     @GET("api/posts")
     suspend fun getAllPosts(): Response<List<PostResponse>>
