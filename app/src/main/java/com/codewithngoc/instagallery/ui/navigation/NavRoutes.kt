@@ -23,12 +23,14 @@ import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInViewModel
 import com.codewithngoc.instagallery.ui.features.auth.signup.SignUpScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedScreen
-import com.codewithngoc.instagallery.ui.features.homefeed.PostDetailScreen
+import com.codewithngoc.instagallery.ui.features.homefeed.detailspost.PostDetailScreen
 import com.codewithngoc.instagallery.ui.features.newpost.NewPostScreen
 import com.codewithngoc.instagallery.ui.features.newpost.editpost.EditPostScreen
+import com.codewithngoc.instagallery.ui.features.news.NewsScreen
 import com.codewithngoc.instagallery.ui.features.profile.LogOutScreen
 import com.codewithngoc.instagallery.ui.features.profile.ProfileScreen
 import com.codewithngoc.instagallery.ui.features.profile.editprofilepost.EditPostProfileScreen
+import com.codewithngoc.instagallery.ui.features.profile.settings.SettingsScreen
 import com.codewithngoc.instagallery.ui.splash.SplashScreen
 
 sealed class Screen(val route: String) {
@@ -40,15 +42,22 @@ sealed class Screen(val route: String) {
 
     object Logout : Screen("logout")
 
+    //================
+
     object HomeFeed : Screen("homefeed")
 
-    object PostDetail : Screen("postdetail/{postId}") {
-        fun createRoute(postId: String) = "postdetail/$postId"
-    }
+    object News : Screen("news")
 
     object NewPost : Screen("new_post")
 
     object Profile : Screen("profile")
+
+
+    //==========
+
+    object PostDetail : Screen("postdetail/{postId}") {
+        fun createRoute(postId: String) = "postdetail/$postId"
+    }
 
     object EditPost : Screen("edit_post_screen/{encodedUri}") {
         fun createRoute(encodedUri: String) = "edit_post_screen/$encodedUri"
@@ -59,6 +68,8 @@ sealed class Screen(val route: String) {
     object EditPostProfile : Screen("editPost/{postId}") {
         fun createRoute(postId: String) = "editPost/$postId"
     }
+
+    object Settings : Screen("settings")
 
 }
 
@@ -102,6 +113,12 @@ fun AppNavigation(
 
         composable(Screen.HomeFeed.route) {
             HomeFeedScreen(
+                navController = navController
+            )
+        }
+
+        composable(Screen.News.route) {
+            NewsScreen(
                 navController = navController
             )
         }
@@ -171,6 +188,7 @@ fun AppNavigation(
             )
         }
 
+        // Edit Post from Profile Screen
         composable(
             route = Screen.EditPostProfile.route,
             arguments = listOf(navArgument("postId") { type = NavType.StringType })
@@ -185,6 +203,11 @@ fun AppNavigation(
                     navController.popBackStack()
                 }
             )
+        }
+
+        // Settings Screen
+        composable(Screen.Settings.route) {
+            SettingsScreen(navController = navController)
         }
     }
 }

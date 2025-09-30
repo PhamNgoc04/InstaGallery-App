@@ -470,8 +470,8 @@ fun HomeInsBottomBar(
             )
         }
         BottomNavItem(
-            isSelected = false,
-            onClick = { /* TODO: mở News */ }
+            isSelected = currentRoute == Screen.News.route,
+            onClick = { navController.navigate(Screen.News.route) }
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_danhsach),
@@ -538,12 +538,6 @@ fun RowScope.BottomNavItem(
             indicatorColor = Color.Transparent
         )
     )
-}
-@Composable
-fun PostDetailScreen(postId: String, navController: NavController) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Post Detail for id: $postId")
-    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

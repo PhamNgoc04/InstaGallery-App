@@ -188,7 +188,7 @@ fun ProfileTopBar(navController: NavController) {
         actions = {
             IconButton(
                 onClick = {
-                    navController.navigate(Screen.Logout.route) {
+                    navController.navigate(Screen.Settings.route) {
                         // optional: đảm bảo chỉ navigate một lần nếu cần
                         launchSingleTop = true
                     }
