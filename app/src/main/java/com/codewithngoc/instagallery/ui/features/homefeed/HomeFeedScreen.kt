@@ -62,6 +62,7 @@ import java.time.Instant
 fun HomeFeedScreen(
     navController: NavController,
     viewModel: HomeFeedViewModel = hiltViewModel(),
+    commentViewModel: CommentViewModel = hiltViewModel()
 ) {
 
     val mainGraphBackStackEntry = remember(navController.currentBackStackEntry) {
@@ -87,7 +88,7 @@ fun HomeFeedScreen(
     var selectedPostIdForComment by remember { mutableStateOf<Int?>(null) }
 
     // ✅ Khởi tạo CommentViewModel dùng để hiển thị CommentBottomSheet
-    val commentViewModel: CommentViewModel = hiltViewModel()
+//    val commentViewModel: CommentViewModel = hiltViewModel()
 
     // Biến trạng thái cho Share/More BottomSheet
     var showMoreBottomSheet by remember { mutableStateOf(false) }
