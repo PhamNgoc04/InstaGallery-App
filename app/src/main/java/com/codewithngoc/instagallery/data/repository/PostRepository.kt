@@ -9,10 +9,12 @@ import javax.inject.Inject
 class PostRepository @Inject constructor(
     private val api: InstaGalleryApi
 ) {
+    // Hàm lấy bài viết theo ID
     suspend fun getPostById(postId: Int): ApiResponse<PostResponse> {
         return safeApiCall { api.getPostById(postId) }
     }
 
+    // Hàm lấy tất cả bài viết
     suspend fun getAllPosts(): ApiResponse<List<PostResponse>> {
         return safeApiCall { api.getAllPosts() }
     }

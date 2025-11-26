@@ -12,7 +12,8 @@ data class PostResponse (
     val media: List<MediaResponse>,
     val likeCount: Int,
     val commentCount: Int,
-    val createdAt: String
+    val createdAt: String,
+    val updatedAt: String //
 )
 
 @Serializable

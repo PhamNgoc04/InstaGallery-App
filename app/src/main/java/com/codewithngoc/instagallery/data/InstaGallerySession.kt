@@ -6,7 +6,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// Lưu token để xác thực với
+// Lưu token để xác thực với...
 @Singleton
 class InstaGallerySession @Inject constructor(
     @ApplicationContext context: Context

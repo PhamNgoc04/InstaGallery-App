@@ -27,8 +27,8 @@ class LogOutRepository @Inject constructor(
 //
 //        return result
 //    }
-
-    // Cách 2: Không gọi API logout, chỉ xoá token + refreshToken khỏi session
+////
+//    // Cách 2: Không gọi API logout, chỉ xoá token + refreshToken khỏi session
     suspend fun logout(): ApiResponse<Unit> {
         // Xoá token + refreshToken khỏi session
         session.clearTokens()
