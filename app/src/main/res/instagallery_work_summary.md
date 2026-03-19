@@ -213,7 +213,45 @@ Tất cả màn hình mới tuân theo thiết kế thống nhất:
 
 ---
 
-## 7. Build Verification
+## 7. Sửa Navigation — Kết Nối Toàn Bộ Màn Hình ✅
+
+### 7.1. Bottom Navigation Bar (`HomeInsBottomBar`)
+
+```diff
+- Tab: Trang chủ | News | + | (TODO) | Hồ sơ
++ Tab: Trang chủ | Khám phá | Đăng bài | Thông báo | Hồ sơ
+```
+
+| Thay đổi | Chi tiết |
+|----------|----------|
+| ✅ Thay tab **News** → **Khám phá** | Navigate → `ExploreScreen` |
+| ✅ Kết nối tab **Thông báo** | Navigate → `NotificationScreen` (trước là TODO) |
+| ✅ Đổi nhãn tiếng Việt | "Trang chủ", "Khám phá", "Đăng bài", "Thông báo", "Hồ sơ" |
+
+### 7.2. Top Navigation Bar (`HomeInsTopBar`)
+
+| Thay đổi | Chi tiết |
+|----------|----------|
+| ✅ Thêm icon **🔍 Tìm kiếm** | Click → `SearchScreen` |
+| ✅ Thêm icon **✉️ Tin nhắn** | Click → `MessagesScreen` |
+| ✅ Nhận `NavController` | Trước đó không có, không navigate được |
+
+### 7.3. Profile Screen (`ProfileTopBar`)
+
+| Thay đổi | Chi tiết |
+|----------|----------|
+| ✅ Thêm icon **✉️ Tin nhắn** | Click → `MessagesScreen` |
+| ✅ Đổi tiêu đề | "My Profile" → "Hồ sơ" |
+
+### 7.4. Post Feed (`PostList`)
+
+| Thay đổi | Chi tiết |
+|----------|----------|
+| ✅ Fix `onProfileClick` | Click avatar/tên → `UserProfileScreen(userId)` (trước là TODO) |
+
+---
+
+## 8. Build Verification
 
 ```
 BUILD SUCCESSFUL in 2m 7s
@@ -222,13 +260,56 @@ BUILD SUCCESSFUL in 2m 7s
 
 ---
 
-## 8. Việc Cần Làm Tiếp
+## 9. Git & Repository Management
+
+### 9.1. Đẩy code lên GitHub
+
+| Nhánh | Trạng thái |
+|-------|-----------|
+| `feature/dev-continue` | ✅ Push thành công |
+| `development` | ✅ Fast-forward merge + push |
+| `main` | ✅ Merge (resolve 4 conflicts) + push |
+
+**Commit chính:** `60 files changed, 7699 insertions(+), 682 deletions(-)`
+
+### 9.2. Dọn dẹp Repository
+
+| Việc | Chi tiết |
+|------|----------|
+| ✅ Xóa `.log` files | `hs_err_pid5904.log`, `hs_err_pid7408.log`, `hs_err_pid19720.log`, `replay_pid5904.log` |
+| ✅ Cập nhật `.gitignore` | Thêm `hs_err_pid*.log` và `replay_pid*.log` |
+
+### 9.3. README.md — Tạo mới ✅
+
+Tạo file `README.md` chuyên nghiệp cho GitHub bao gồm:
+
+- 📸 Logo SVG (`docs/Logo_InstaGallery.svg`)
+- 🏷️ Badges (Android, Kotlin, Compose, MVVM, Hilt, REST)
+- 📋 Giới thiệu dự án + mục tiêu
+- ✨ 8 nhóm tính năng chi tiết
+- 🏗️ Kiến trúc MVVM diagram + Tech Stack table
+- 📁 Cấu trúc thư mục dự án
+- 📱 Bảng 28 màn hình đầy đủ
+- 🚀 Hướng dẫn cài đặt & chạy
+- 👨‍💻 Thông tin tác giả
+
+---
+
+## 10. Việc Cần Làm Tiếp
 
 | Ưu tiên | Việc cần làm | Chi tiết |
 |---------|-------------|----------|
-| 🔴 Cao | Tạo ViewModel + Repository | Kết nối 15 screens với API thực |
-| 🔴 Cao | Cập nhật Bottom Navigation | Thêm tab Explore, Notifications |
-| 🟡 TB | Kết nối HomeFeed toolbar | Thêm nút 🔔 thông báo, ✉ tin nhắn |
+| 🔴 Cao | Tạo ViewModel + Repository | Kết nối 15 screens mới với API thực |
 | 🟡 TB | Test trên thiết bị thật | Verify từng luồng điều hướng |
 | 🟢 Thấp | Animation + Loading states | Skeleton loading, pull-to-refresh |
 | 🟢 Thấp | Unit/UI Tests | ViewModel tests, Compose tests |
+
+### Đã hoàn thành ✅
+
+| Việc | Trạng thái |
+|------|-----------|
+| ~~Cập nhật Bottom Navigation~~ | ✅ Thêm tab Explore, Notifications |
+| ~~Kết nối HomeFeed toolbar~~ | ✅ Thêm nút 🔍 tìm kiếm, ✉ tin nhắn |
+| ~~Tạo README.md~~ | ✅ Với logo SVG, badges, và nội dung đầy đủ |
+| ~~Đẩy code lên GitHub~~ | ✅ Cả 3 nhánh: main, development, feature/dev-continue |
+| ~~Dọn dẹp .log files~~ | ✅ Xóa và thêm vào .gitignore |
