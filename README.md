@@ -232,7 +232,7 @@ git clone https://github.com/PhamNgoc04/InstaGallery-App.git
 |-----------|----------|
 | **Họ tên** | Phạm Ngọc |
 | **GitHub** | [@PhamNgoc04](https://github.com/PhamNgoc04) |
-| **Dự án** | Đồ án tốt nghiệp — Hệ thống giao lưu ảnh |
+| **Dự án** | InstaGallery — Ứng dụng chia sẻ ảnh chuyên nghiệp |
 
 ---
 
