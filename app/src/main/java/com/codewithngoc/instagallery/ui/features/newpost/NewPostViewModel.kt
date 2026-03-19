@@ -8,7 +8,7 @@ import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.CreatePostRequest
-import com.codewithngoc.instagallery.data.model.MediaItem
+import com.codewithngoc.instagallery.data.model.CreateMediaItemRequest
 import com.codewithngoc.instagallery.data.model.MediaType
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.PostVisibility
@@ -75,7 +75,7 @@ class NewPostViewModel @Inject constructor(
             val userId = session.getUserId()
             val mediaUri = _selectedMediaUri.value
 
-            if (userId == null || mediaUri == null) {
+            if (userId == -1L || mediaUri == null) {
                 _uiState.value = NewPostEvent.Error(
                     context.getString(R.string.post_failed_missing_data)
                 )
@@ -87,10 +87,9 @@ class NewPostViewModel @Inject constructor(
                 visibility = PostVisibility.PUBLIC,
                 location = _location.value,
                 media = listOf(
-                    MediaItem(
+                    CreateMediaItemRequest(
                         mediaFileUrl = mediaUri.toString(), // Tạm thời dùng URI local, cần upload file trước
-                        mediaType = MediaType.IMAGE,
-                        position = 0
+                        mediaType = MediaType.IMAGE
                     )
                 )
             )

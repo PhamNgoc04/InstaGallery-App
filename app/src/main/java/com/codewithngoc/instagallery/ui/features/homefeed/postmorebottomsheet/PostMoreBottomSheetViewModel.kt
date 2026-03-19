@@ -37,7 +37,7 @@ class PostMoreBottomSheetViewModel @Inject constructor(
     }
 
     // Function to handle the "Save" action
-    fun savePost(postId: Int) {
+    fun savePost(postId: Long) {
         viewModelScope.launch {
             _uiEvent.value = MoreEvent.Loading
             // TODO: Implement API call to save the post
@@ -47,7 +47,7 @@ class PostMoreBottomSheetViewModel @Inject constructor(
     }
 
     // Function to handle the "Unfollow" action
-    fun unfollowUser(userId: Int) {
+    fun unfollowUser(userId: Long) {
         viewModelScope.launch {
             _uiEvent.value = MoreEvent.Loading
             // TODO: Implement API call to unfollow the user
@@ -56,7 +56,7 @@ class PostMoreBottomSheetViewModel @Inject constructor(
     }
 
     // Function to handle the "Report" action
-    fun reportPost(postId: Int) {
+    fun reportPost(postId: Long) {
         viewModelScope.launch {
             _uiEvent.value = MoreEvent.Loading
             // TODO: Implement API call to report the post

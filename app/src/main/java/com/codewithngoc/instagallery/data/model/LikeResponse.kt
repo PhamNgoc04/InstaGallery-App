@@ -1,19 +1,19 @@
 package com.codewithngoc.instagallery.data.model
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Serializable
-data class LikeResponse (
-    val userId: Int,
-    val username: String?,
-    val fullName: String?,
-    val profilePictureUrl: String?
+/**
+ * Response cho toggle like - khớp với ToggleLikeResponse của backend Ktor mới
+ * Backend dùng 1 endpoint POST /{id}/like để toggle (like/unlike)
+ */
+data class ToggleLikeResponse(
+    @SerializedName("isLiked") val isLiked: Boolean,
+    @SerializedName("totalLikes") val totalLikes: Int
 )
 
-@Serializable
-data class CheckLikedResponse(
-    val liked: Boolean
+/**
+ * Response cho toggle save/bookmark
+ */
+data class ToggleSaveResponse(
+    @SerializedName("isSaved") val isSaved: Boolean
 )
-
-@Serializable
-data class LikeCountResponse(val likeCount: Int)

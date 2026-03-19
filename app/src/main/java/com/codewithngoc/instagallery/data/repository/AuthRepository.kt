@@ -1,7 +1,8 @@
 package com.codewithngoc.instagallery.data.repository
 
 import com.codewithngoc.instagallery.data.InstaGalleryApi
-import com.codewithngoc.instagallery.data.model.AuthResponse
+import com.codewithngoc.instagallery.data.model.LoginResponse
+import com.codewithngoc.instagallery.data.model.RegisterResponse
 import com.codewithngoc.instagallery.data.model.SignInRequest
 import com.codewithngoc.instagallery.data.model.SignUpRequest
 import com.codewithngoc.instagallery.data.remote.ApiResponse
@@ -11,11 +12,11 @@ import javax.inject.Inject
 class AuthRepository @Inject constructor(
     private val api: InstaGalleryApi
 ) {
-    suspend fun signIn(request: SignInRequest) : ApiResponse<AuthResponse> {
+    suspend fun signIn(request: SignInRequest): ApiResponse<LoginResponse> {
         return safeApiCall { api.signIn(request) }
     }
 
-    suspend fun signup(request: SignUpRequest) : ApiResponse<AuthResponse> {
+    suspend fun signup(request: SignUpRequest): ApiResponse<RegisterResponse> {
         return safeApiCall { api.signUp(request) }
     }
 }

@@ -1,22 +1,20 @@
 package com.codewithngoc.instagallery.data.model
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Serializable
+/**
+ * User profile từ backend - khớp với UserDto
+ */
 data class UserProfileResponse(
-    val userId: Int = 0,
-    val username: String = "",
-    val fullName: String = "",
-    val profilePictureUrl: String? = null,
-    val bio: String? = null,
-    val website: String? = null,
-    val gender: String? = null,
-    val dateOfBirth: String? = null,
-    val location: String? = null,
-    val isVerified: Boolean = false,
-    val postCount: Int = 0,
-    val followerCount: Int = 0,
-    val followingCount: Int = 0
+    @SerializedName("id") val id: Long = 0,
+    @SerializedName("username") val username: String = "",
+    @SerializedName("email") val email: String = "",
+    @SerializedName("fullName") val fullName: String = "",
+    @SerializedName("profilePictureUrl") val profilePictureUrl: String? = null,
+    @SerializedName("role") val role: String = "USER",
+    @SerializedName("userType") val userType: String = "ENTHUSIAST",
+    @SerializedName("isActive") val isActive: Boolean = true,
+    @SerializedName("isVerified") val isVerified: Boolean = false
 )
 
 sealed class ProfileUiState {
@@ -24,7 +22,7 @@ sealed class ProfileUiState {
     data class Success(
         val user: User,
         val states: List<UserState>,
-        val posts: List<PostResponse>
+        val posts: List<FeedPostResponse>
     ) : ProfileUiState()
 
     data class Error(val message: String) : ProfileUiState()
@@ -36,7 +34,7 @@ data class UserState(
 )
 
 data class User(
-    val userId: Int,
+    val userId: Long,
     val username: String,
     val fullName: String,
     val profilePictureUrl: String?,
@@ -49,4 +47,26 @@ data class User(
     val postCount: Int,
     val followerCount: Int,
     val followingCount: Int
+)
+
+// Follow models matching backend FollowDto
+data class FollowDto(
+    val id: Long = 0,
+    val username: String = "",
+    val fullName: String = "",
+    val avatar: String? = null,
+    val role: String = "USER",
+    val userType: String = "ENTHUSIAST",
+    val isFollowing: Boolean? = null
+)
+
+data class PaginatedFollowsResponse(
+    val users: List<FollowDto> = emptyList(),
+    val meta: FollowPaginationMeta = FollowPaginationMeta()
+)
+
+data class FollowPaginationMeta(
+    val currentPage: Int = 1,
+    val totalPages: Int = 0,
+    val totalRecords: Int = 0
 )

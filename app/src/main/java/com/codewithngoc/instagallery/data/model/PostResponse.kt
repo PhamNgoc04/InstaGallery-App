@@ -1,35 +1,44 @@
 package com.codewithngoc.instagallery.data.model
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Serializable
-data class PostResponse (
-    val postId: Int,
-    val author: AuthorInfoResponse,
-    val caption: String?,
-    val location: String?,
-    val visibility: PostVisibility,
-    val media: List<MediaResponse>,
-    val likeCount: Int,
-    val commentCount: Int,
-    val createdAt: String,
-    val updatedAt: String //
+/**
+ * Bài đăng trong Feed - khớp với FeedPostDto của backend Ktor mới
+ */
+data class FeedPostResponse(
+    @SerializedName("postId") val postId: Long,
+    @SerializedName("userId") val userId: Long,
+    @SerializedName("username") val username: String,
+    @SerializedName("userAvatar") val userAvatar: String?,
+    @SerializedName("caption") val caption: String?,
+    @SerializedName("location") val location: String?,
+    @SerializedName("likeCount") val likeCount: Int,
+    @SerializedName("commentCount") val commentCount: Int,
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("media") val media: List<FeedMediaResponse>
 )
 
-@Serializable
-data class MediaResponse(
-    val mediaId: Int,
-    val mediaFileUrl: String,
-    val thumbnailUrl: String? = null,
-    val mediaType: MediaType,
-    val position: Int,
-    val filterId: Int? = null,
-    val metadata: String? = null
+/**
+ * Bài đăng cơ bản - khớp với PostDto
+ */
+data class PostResponse(
+    @SerializedName("postId") val postId: Long,
+    @SerializedName("userId") val userId: Long,
+    @SerializedName("caption") val caption: String?,
+    @SerializedName("location") val location: String?,
+    @SerializedName("visibility") val visibility: PostVisibility,
+    @SerializedName("likeCount") val likeCount: Int,
+    @SerializedName("commentCount") val commentCount: Int,
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("media") val media: List<FeedMediaResponse> = emptyList()
 )
 
-@Serializable
-data class AuthorInfoResponse(
-    val userId: Int,
-    val username: String,
-    val profilePictureUrl: String? = null
+/**
+ * Media trong bài đăng - khớp với FeedMediaDto
+ */
+data class FeedMediaResponse(
+    @SerializedName("id") val id: Long,
+    @SerializedName("url") val url: String,
+    @SerializedName("type") val type: String,
+    @SerializedName("orderIndex") val orderIndex: Int
 )

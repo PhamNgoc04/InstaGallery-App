@@ -4,19 +4,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codewithngoc.instagallery.R
-import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.InstaGallerySession
-import com.codewithngoc.instagallery.data.model.PostResponse
+import com.codewithngoc.instagallery.data.model.FeedPostResponse
 import com.codewithngoc.instagallery.data.remote.ApiResponse
-import com.codewithngoc.instagallery.data.remote.safeApiCall
-import com.codewithngoc.instagallery.data.repository.LikeRepository
 import com.codewithngoc.instagallery.data.repository.PostRepository
 import com.codewithngoc.instagallery.ui.features.homefeed.likeAction.LikeViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -40,8 +36,11 @@ class HomeFeedViewModel @Inject constructor(
     private val _navigationEvent = MutableSharedFlow<HomeFeedNavigationEvent>()
     val navigationEvent = _navigationEvent.asSharedFlow()
 
-    private val _posts = MutableStateFlow<List<PostResponse>>(emptyList())
+    private val _posts = MutableStateFlow<List<FeedPostResponse>>(emptyList())
     val posts = _posts.asStateFlow()
+
+    private var currentPage = 1
+    private var hasNextPage = true
 
     sealed class HomeFeedNavigationEvent {
         data class NavigateToPostDetail(val postId: String) : HomeFeedNavigationEvent()
@@ -50,30 +49,30 @@ class HomeFeedViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             newPostSharedFlow.collectLatest {
-                loadAllPosts()
+                loadFeed()
             }
         }
         // ✅ Tải dữ liệu ban đầu
-        loadAllPosts()
+        loadFeed()
     }
 
-    fun loadAllPosts() {
+    fun loadFeed() {
+        currentPage = 1
+        hasNextPage = true
         viewModelScope.launch {
             _uiState.value = PostEvent.Loading
 
-            val response = postRepository.getAllPosts()
+            val response = postRepository.getFeed(page = currentPage)
 
             when (response) {
                 is ApiResponse.Success -> {
                     _uiState.value = PostEvent.Success
-                    _posts.value = response.data.map {post ->
-                        post
-                    }
+                    _posts.value = response.data.posts
+                    hasNextPage = response.data.meta.hasNext
+                    currentPage = response.data.meta.currentPage + 1
                 }
                 is ApiResponse.Error -> {
-//                    _uiState.value = PostEvent.Error(response.code.getFeedErrorMessage())
                     if (response.code == 401) {
-                        // Token hết hạn -> xoá token + điều hướng về login
                         session.clearToken()
                         _uiState.value = PostEvent.Error(
                             context.getString(R.string.feed_failed_unauthorized)
@@ -92,17 +91,32 @@ class HomeFeedViewModel @Inject constructor(
         }
     }
 
-    fun onPostClick(postId: Int) {
+    fun loadMorePosts() {
+        if (!hasNextPage) return
+        viewModelScope.launch {
+            val response = postRepository.getFeed(page = currentPage)
+            when (response) {
+                is ApiResponse.Success -> {
+                    _posts.value = _posts.value + response.data.posts
+                    hasNextPage = response.data.meta.hasNext
+                    currentPage = response.data.meta.currentPage + 1
+                }
+                else -> { /* ignore load more errors */ }
+            }
+        }
+    }
+
+    fun onPostClick(postId: Long) {
         viewModelScope.launch {
             _navigationEvent.emit(HomeFeedNavigationEvent.NavigateToPostDetail(postId.toString()))
         }
     }
 
-    fun updatePosts(updatedPosts: List<PostResponse>) {
+    fun updatePosts(updatedPosts: List<FeedPostResponse>) {
         _posts.value = updatedPosts
     }
 
-    fun updateCommentCount(postId: Int) {
+    fun updateCommentCount(postId: Long) {
         val currentPosts = _posts.value
         val updatedPosts = currentPosts.map { post ->
             if (post.postId == postId) {

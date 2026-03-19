@@ -4,22 +4,17 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codewithngoc.instagallery.R
-import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.AddCommentRequest
 import com.codewithngoc.instagallery.data.model.CommentResponse
-import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.remote.ApiResponse
-import com.codewithngoc.instagallery.data.remote.safeApiCall
 import com.codewithngoc.instagallery.data.repository.CommentRepository
-import com.codewithngoc.instagallery.data.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,19 +26,19 @@ class CommentViewModel @Inject constructor(
 ) : ViewModel() {
 
     // Lưu bình luận theo postId
-    private val _commentsMap = MutableStateFlow<Map<Int, List<CommentResponse>>>(emptyMap())
+    private val _commentsMap = MutableStateFlow<Map<Long, List<CommentResponse>>>(emptyMap())
     val commentsMap = _commentsMap.asStateFlow()
 
     private val _commentEvent = MutableStateFlow<CommentEvent>(CommentEvent.Nothing)
     val commentEvent = _commentEvent.asStateFlow()
 
-    private val _newCommentEvent = MutableSharedFlow<Pair<Int, CommentResponse>>() // postId -> comment
+    private val _newCommentEvent = MutableSharedFlow<Pair<Long, CommentResponse>>() // postId -> comment
     val newCommentEvent = _newCommentEvent.asSharedFlow()
 
     // Sắp xếp comment theo cấu trúc cha - con (đệ quy)
     private fun sortComments(comments: List<CommentResponse>): List<CommentResponse> {
-        val repliesMap = comments.filter { it.parentCommentId != null }.groupBy { it.parentCommentId }
-        val rootComments = comments.filter { it.parentCommentId == null }.sortedByDescending { it.createdAt }
+        val repliesMap = comments.filter { it.parentId != null }.groupBy { it.parentId }
+        val rootComments = comments.filter { it.parentId == null }.sortedByDescending { it.createdAt }
 
         val sortedList = mutableListOf<CommentResponse>()
 
@@ -62,13 +57,13 @@ class CommentViewModel @Inject constructor(
     }
 
     // Hàm lấy bình luận
-    fun loadComments(postId: Int) {
+    fun loadComments(postId: Long) {
         viewModelScope.launch {
             _commentEvent.value = CommentEvent.Loading
             val response = repository.getCommentsForPost(postId)
             when (response) {
                 is ApiResponse.Success -> {
-                    val comments = response.data
+                    val comments = response.data.comments
 
                     val sortedComments = sortComments(comments)
 
@@ -88,10 +83,10 @@ class CommentViewModel @Inject constructor(
     }
 
     // Thêm bình luận cho 1 post
-    fun addComment(postId: Int, content: String, parentCommentId: Int? = null) {
+    fun addComment(postId: Long, content: String, parentId: Long? = null) {
         viewModelScope.launch {
             _commentEvent.value = CommentEvent.Loading
-            val request = AddCommentRequest(content = content, parentCommentId = parentCommentId)
+            val request = AddCommentRequest(content = content, parentId = parentId)
             val response = repository.addComment(postId, request)
 
             when (response) {
@@ -100,8 +95,8 @@ class CommentViewModel @Inject constructor(
                     val newComment = response.data
                     val currentComments = _commentsMap.value[postId] ?: emptyList()
                     // Logic để chèn bình luận con vào đúng vị trí
-                    val updatedComments = if (parentCommentId != null) {
-                        val parentIndex = currentComments.indexOfFirst { it.commentId == parentCommentId }
+                    val updatedComments = if (parentId != null) {
+                        val parentIndex = currentComments.indexOfFirst { it.commentId == parentId }
                         if (parentIndex != -1) {
                             // Chèn bình luận con ngay sau bình luận cha
                             currentComments.toMutableList().apply {

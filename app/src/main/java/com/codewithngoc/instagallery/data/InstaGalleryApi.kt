@@ -1,122 +1,206 @@
 package com.codewithngoc.instagallery.data
 
-import com.codewithngoc.instagallery.data.model.AddCommentRequest
-import com.codewithngoc.instagallery.data.model.AuthResponse
-import com.codewithngoc.instagallery.data.model.CheckLikedResponse
-import com.codewithngoc.instagallery.data.model.CommentResponse
-import com.codewithngoc.instagallery.data.model.CreatePostRequest
-import com.codewithngoc.instagallery.data.model.LikeCountResponse
-import com.codewithngoc.instagallery.data.model.LikeResponse
-import com.codewithngoc.instagallery.data.model.MessageResponse
-import com.codewithngoc.instagallery.data.model.PostResponse
-import com.codewithngoc.instagallery.data.model.SignInRequest
-import com.codewithngoc.instagallery.data.model.SignUpRequest
-import com.codewithngoc.instagallery.data.model.UploadResponse
-import com.codewithngoc.instagallery.data.model.UserProfileResponse
-import okhttp3.MultipartBody
+import com.codewithngoc.instagallery.data.model.*
 import retrofit2.Response
 import retrofit2.http.Body
-import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
-import retrofit2.http.Headers
-import retrofit2.http.Multipart
 import retrofit2.http.POST
-import retrofit2.http.Part
+import retrofit2.http.PUT
+import retrofit2.http.DELETE
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface InstaGalleryApi {
-    // Đăng nhập
-    @POST("api/auth/login")
-    suspend fun signIn(@Body request: SignInRequest): Response<AuthResponse>
 
-    // Đăng ký
-    @POST("api/auth/register")
-    suspend fun signUp(@Body request: SignUpRequest): Response<AuthResponse>
+    // ==================== AUTH ====================
 
-    // ✅ Đăng xuất
-    @Headers("Content-Type: application/json")
-    @POST("api/auth/logout")
-    suspend fun logout(@Body body: Map<String, String>): Response<Unit>
+    @POST("api/v1/auth/login")
+    suspend fun signIn(@Body request: SignInRequest): Response<ApiResponseWrapper<LoginResponse>>
 
-    // Tạo bài đăng
-    @POST("api/posts")
-    suspend fun createPost(@Body request: CreatePostRequest): Response<PostResponse>
+    @POST("api/v1/auth/register")
+    suspend fun signUp(@Body request: SignUpRequest): Response<ApiResponseWrapper<RegisterResponse>>
 
-    @Multipart
-    @POST("api/upload")
-    suspend fun uploadFile(@Part file: MultipartBody.Part): Response<UploadResponse>
+    @POST("api/v1/auth/logout")
+    suspend fun logout(
+        @Header("X-Refresh-Token") refreshToken: String
+    ): Response<ApiResponseWrapper<Unit>>
 
-    //Lấy bài đăng theo ID
-    @GET("api/posts/{postId}")
-    suspend fun getPostById(@Path("postId") postId: Int): Response<PostResponse>
+    @POST("api/v1/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<ApiResponseWrapper<Unit>>
 
+    @PUT("api/v1/auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponseWrapper<Unit>>
 
-    // Lấy tất cả bài đăng
-    @GET("api/posts")
-    suspend fun getAllPosts(): Response<List<PostResponse>>
+    // ==================== POSTS ====================
 
-    // ✅ API để thêm bình luận
-    @POST("api/posts/{postId}/comments")
-    suspend fun addComment(
-        @Path("postId") postId: Int,
-        @Body request: AddCommentRequest
-    ): Response<CommentResponse>
+    @POST("api/v1/posts")
+    suspend fun createPost(@Body request: CreatePostRequest): Response<ApiResponseWrapper<PostResponse>>
 
-    // ✅ API để lấy danh sách bình luận
-    @GET("api/posts/{postId}/comments")
-    suspend fun getCommentsForPost(
-        @Path("postId") postId: Int,
-        @Query("page") page: Int,
-        @Query("size") size: Int
-    ): Response<List<CommentResponse>>
-
-    // ✅ API để xóa bình luận
-
-    // 👤 Lấy thông tin người dùng
-    @GET("api/auth/profile/{id}")
-    suspend fun getUserProfile(
-        @Header("Authorization") token: String,
-        @Path("id") userId: Int
-    ): Response<UserProfileResponse>
-
-    // 📸 Lấy danh sách bài đăng của 1 người dùng
-    @GET("api/posts/user/{id}")
-    suspend fun getUserPosts(
-        @Header("Authorization") token: String,
-        @Path("id") userId: Int
-    ): Response<List<PostResponse>>
-
-    // Lấy danh sách like
-    @GET("api/posts/{postId}/likes")
-    suspend fun getLikes(
-        @Path("postId") postId: Int,
+    @GET("api/v1/posts/feed")
+    suspend fun getFeed(
         @Query("page") page: Int = 1,
-        @Query("size") size: Int = 20,
-    ) : Response<List<LikeResponse>>
+        @Query("limit") limit: Int = 10
+    ): Response<ApiResponseWrapper<PaginatedFeedResponse>>
 
-    //Kiểm tra người dùng đã like chưa
-    @GET("api/posts/{postId}/likes/check")
-    suspend fun checkLiked(
-        @Path("postId") postId: Int
-    ) : Response<CheckLikedResponse> // backend trả { "liked": true/false }
+    @PUT("api/v1/posts/{id}")
+    suspend fun updatePost(
+        @Path("id") postId: Long,
+        @Body request: UpdatePostRequest
+    ): Response<ApiResponseWrapper<Unit>>
 
-    // Like bài viết
-    @POST("api/posts/{postId}/likes")
-    suspend fun likePost(
-        @Path("postId") postId: Int
-    ) : Response<LikeCountResponse> // backend trả về message
+    @DELETE("api/v1/posts/{id}")
+    suspend fun deletePost(@Path("id") postId: Long): Response<ApiResponseWrapper<Unit>>
 
-    // Bỏ Like bài viết
-    @DELETE("api/posts/{postId}/likes")
-    suspend fun unlikePost(
-        @Path("postId") postId: Int
-    ) : Response<LikeCountResponse>
+    // ==================== INTERACTIONS ====================
 
-    @GET("api/posts/{postId}/likes/count")
-    suspend fun getLikeCount(
-        @Path("postId") postId: Int
-    ): Response<Int>
+    @POST("api/v1/posts/{id}/like")
+    suspend fun toggleLike(@Path("id") postId: Long): Response<ApiResponseWrapper<ToggleLikeResponse>>
 
+    @POST("api/v1/posts/{id}/save")
+    suspend fun toggleSave(@Path("id") postId: Long): Response<ApiResponseWrapper<ToggleSaveResponse>>
+
+    @POST("api/v1/posts/{id}/comments")
+    suspend fun addComment(
+        @Path("id") postId: Long,
+        @Body request: AddCommentRequest
+    ): Response<ApiResponseWrapper<CommentResponse>>
+
+    @GET("api/v1/posts/{id}/comments")
+    suspend fun getCommentsForPost(
+        @Path("id") postId: Long,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponseWrapper<PaginatedCommentsResponse>>
+
+    // ==================== USERS ====================
+
+    @GET("api/v1/users/me")
+    suspend fun getCurrentUser(): Response<ApiResponseWrapper<UserProfileResponse>>
+
+    @PUT("api/v1/users/me")
+    suspend fun updateProfile(@Body request: UpdateUserProfileRequest): Response<ApiResponseWrapper<UserProfileResponse>>
+
+    @GET("api/v1/users/{id}")
+    suspend fun getUserProfile(@Path("id") userId: Long): Response<ApiResponseWrapper<UserProfileResponse>>
+
+    @POST("api/v1/users/{id}/follow")
+    suspend fun toggleFollow(@Path("id") userId: Long): Response<ApiResponseWrapper<Map<String, Boolean>>>
+
+    @GET("api/v1/users/{id}/followers")
+    suspend fun getFollowers(
+        @Path("id") userId: Long,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponseWrapper<PaginatedFollowsResponse>>
+
+    @GET("api/v1/users/{id}/following")
+    suspend fun getFollowing(
+        @Path("id") userId: Long,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponseWrapper<PaginatedFollowsResponse>>
+
+    @GET("api/v1/users/suggestions")
+    suspend fun getSuggestions(
+        @Query("limit") limit: Int = 10
+    ): Response<ApiResponseWrapper<List<SearchUserResult>>>
+
+    // ==================== SEARCH ====================
+
+    @GET("api/v1/search")
+    suspend fun search(
+        @Query("q") query: String,
+        @Query("type") type: String? = null // users, posts, tags
+    ): Response<ApiResponseWrapper<SearchResponse>>
+
+    // ==================== NOTIFICATIONS ====================
+
+    @GET("api/v1/notifications")
+    suspend fun getNotifications(
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponseWrapper<PaginatedNotificationsResponse>>
+
+    @PUT("api/v1/notifications/{id}/read")
+    suspend fun markNotificationRead(@Path("id") notificationId: Long): Response<ApiResponseWrapper<Unit>>
+
+    @PUT("api/v1/notifications/read-all")
+    suspend fun markAllNotificationsRead(): Response<ApiResponseWrapper<Unit>>
+
+    @GET("api/v1/notifications/unread-count")
+    suspend fun getUnreadNotificationCount(): Response<ApiResponseWrapper<UnreadCountResponse>>
+
+    // ==================== CONVERSATIONS ====================
+
+    @GET("api/v1/conversations")
+    suspend fun getConversations(): Response<ApiResponseWrapper<List<ConversationResponse>>>
+
+    @POST("api/v1/conversations")
+    suspend fun createConversation(@Body request: CreateConversationRequest): Response<ApiResponseWrapper<ConversationResponse>>
+
+    @GET("api/v1/conversations/{id}/messages")
+    suspend fun getMessages(
+        @Path("id") conversationId: Long,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 30
+    ): Response<ApiResponseWrapper<PaginatedMessagesResponse>>
+
+    @POST("api/v1/conversations/{id}/messages")
+    suspend fun sendMessage(
+        @Path("id") conversationId: Long,
+        @Body request: SendMessageRequest
+    ): Response<ApiResponseWrapper<ChatMessageResponse>>
+
+    @PUT("api/v1/conversations/{id}/read")
+    suspend fun markConversationRead(@Path("id") conversationId: Long): Response<ApiResponseWrapper<Unit>>
+
+    // ==================== PORTFOLIOS ====================
+
+    @GET("api/v1/portfolios")
+    suspend fun getPortfolios(
+        @Query("location") location: String? = null,
+        @Query("specialty") specialty: String? = null,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponseWrapper<PaginatedPortfoliosResponse>>
+
+    @GET("api/v1/portfolios/users/{userId}")
+    suspend fun getUserPortfolio(@Path("userId") userId: Long): Response<ApiResponseWrapper<PortfolioResponse>>
+
+    // ==================== BOOKINGS ====================
+
+    @POST("api/v1/bookings")
+    suspend fun createBooking(@Body request: CreateBookingRequest): Response<ApiResponseWrapper<BookingResponse>>
+
+    @GET("api/v1/bookings")
+    suspend fun getBookings(
+        @Query("status") status: String? = null,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponseWrapper<PaginatedBookingsResponse>>
+
+    @GET("api/v1/bookings/{id}")
+    suspend fun getBookingDetail(@Path("id") bookingId: Long): Response<ApiResponseWrapper<BookingResponse>>
+
+    @PUT("api/v1/bookings/{id}")
+    suspend fun updateBookingStatus(
+        @Path("id") bookingId: Long,
+        @Body request: Map<String, String>
+    ): Response<ApiResponseWrapper<BookingResponse>>
+
+    // ==================== RATINGS ====================
+
+    @POST("api/v1/ratings")
+    suspend fun createRating(@Body request: CreateRatingRequest): Response<ApiResponseWrapper<RatingResponse>>
+
+    // ==================== MEDIA ====================
+
+    @POST("api/v1/media/presigned-url")
+    suspend fun getPresignedUrl(@Body request: PresignedUrlRequest): Response<ApiResponseWrapper<PresignedUrlResponse>>
+
+    // ==================== REPORTS ====================
+
+    @POST("api/v1/reports")
+    suspend fun createReport(@Body request: Map<String, String>): Response<ApiResponseWrapper<Unit>>
 }

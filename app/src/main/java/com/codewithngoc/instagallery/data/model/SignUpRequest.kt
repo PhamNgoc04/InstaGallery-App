@@ -1,11 +1,11 @@
 package com.codewithngoc.instagallery.data.model
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Serializable
 data class SignUpRequest(
-    val username: String,
-    val fullName: String,
-    val email: String,
-    val password: String,
+    @SerializedName("username") val username: String,
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("email") val email: String,
+    @SerializedName("passwordHash") val password: String,
+    @SerializedName("userType") val userType: String = "ENTHUSIAST"
 )

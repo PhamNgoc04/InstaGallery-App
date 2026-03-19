@@ -3,15 +3,17 @@ package com.codewithngoc.instagallery.ui.features.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codewithngoc.instagallery.data.InstaGallerySession
-import com.codewithngoc.instagallery.data.model.PostResponse
+import com.codewithngoc.instagallery.data.model.FeedPostResponse
 import com.codewithngoc.instagallery.data.model.ProfileUiState
 import com.codewithngoc.instagallery.data.model.User
 import com.codewithngoc.instagallery.data.model.UserProfileResponse
 import com.codewithngoc.instagallery.data.model.UserState
+import com.codewithngoc.instagallery.data.repository.PostRepository
 import com.codewithngoc.instagallery.data.repository.ProfileRepository
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.ui.features.homefeed.likeAction.LikeViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -20,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val repository: ProfileRepository,
+    private val postRepository: PostRepository,
     private val session: InstaGallerySession
 ) : ViewModel() {
 
@@ -27,36 +30,70 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState = _uiState.asStateFlow()
 
-    fun loadProfile(userId: Int) {
+    fun loadProfile(userId: Long) {
         viewModelScope.launch {
             _uiState.value = ProfileUiState.Loading
 
-            val userResult = repository.getUserProfile(userId)
-            val postsResult = repository.getUserPosts(userId)
+            // Gọi song song 3 API: user profile, followers count, following count
+            val userDeferred = async { repository.getUserProfile(userId) }
+            val followersDeferred = async { repository.getFollowers(userId) }
+            val followingDeferred = async { repository.getFollowing(userId) }
+            // Lấy posts từ feed (filter theo userId)
+            val postsDeferred = async { postRepository.getFeed(page = 1, limit = 50) }
 
-            if (userResult is ApiResponse.Success && postsResult is ApiResponse.Success) {
+            val userResult = userDeferred.await()
+            val followersResult = followersDeferred.await()
+            val followingResult = followingDeferred.await()
+            val postsResult = postsDeferred.await()
+
+            if (userResult is ApiResponse.Success) {
                 val userProfile = userResult.data
-                val posts = postsResult.data
+
+                // Lấy follower/following counts từ pagination meta
+                val followerCount = if (followersResult is ApiResponse.Success) {
+                    followersResult.data.meta.totalRecords
+                } else 0
+
+                val followingCount = if (followingResult is ApiResponse.Success) {
+                    followingResult.data.meta.totalRecords
+                } else 0
+
+                // Lấy posts của user hiện tại từ feed
+                val myPosts = if (postsResult is ApiResponse.Success) {
+                    postsResult.data.posts.filter { it.userId == userId }
+                } else emptyList()
 
                 _uiState.value = ProfileUiState.Success(
-                    user = userProfile.toUiUser(),
-                    states = listOf(
-                        UserState(userProfile.postCount.toString(), "Posts"),
-                        UserState(userProfile.followerCount.toString(), "Followers"),
-                        UserState(userProfile.followingCount.toString(), "Following")
+                    user = userProfile.toUiUser(
+                        postCount = myPosts.size,
+                        followerCount = followerCount,
+                        followingCount = followingCount
                     ),
-                    posts = posts
+                    states = listOf(
+                        UserState(myPosts.size.toString(), "Posts"),
+                        UserState(followerCount.toString(), "Followers"),
+                        UserState(followingCount.toString(), "Following")
+                    ),
+                    posts = myPosts
                 )
             } else {
-                val message = (userResult as? ApiResponse.Error)?.message
-                    ?: (postsResult as? ApiResponse.Error)?.message
-                    ?: "Unknown error"
+                val message = (userResult as? ApiResponse.Error)?.message ?: "Unknown error"
                 _uiState.value = ProfileUiState.Error(message)
             }
         }
     }
 
-    fun updateCommentCount(postId: Int) {
+    /**
+     * Load profile của user đang đăng nhập
+     */
+    fun loadCurrentProfile() {
+        val userId = session.getUserId()
+        if (userId != -1L) {
+            loadProfile(userId)
+        }
+    }
+
+    fun updateCommentCount(postId: Long) {
         val currentState = _uiState.value
         if (currentState is ProfileUiState.Success) {
             val updatedPosts = currentState.posts.map { post ->
@@ -88,20 +125,24 @@ class ProfileViewModel @Inject constructor(
 
 }
 
-fun UserProfileResponse.toUiUser(): User {
+fun UserProfileResponse.toUiUser(
+    postCount: Int = 0,
+    followerCount: Int = 0,
+    followingCount: Int = 0
+): User {
     return User(
-        userId = this.userId,
+        userId = this.id,
         username = this.username,
         fullName = this.fullName,
         profilePictureUrl = this.profilePictureUrl,
-        bio = this.bio,
-        website = this.website,
-        gender = this.gender,
-        dateOfBirth = this.dateOfBirth,
-        location = this.location,
+        bio = null,
+        website = null,
+        gender = null,
+        dateOfBirth = null,
+        location = null,
         isVerified = this.isVerified,
-        postCount = this.postCount,
-        followerCount = this.followerCount,
-        followingCount = this.followingCount
+        postCount = postCount,
+        followerCount = followerCount,
+        followingCount = followingCount
     )
 }
