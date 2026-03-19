@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/src/main/res/drawable/ic_register_logo.png" width="100" alt="InstaGallery Logo"/>
+  <img src="docs/logo.png" width="100" alt="InstaGallery Logo"/>
 </p>
 
 <h1 align="center">📸 InstaGallery</h1>
