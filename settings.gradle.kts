@@ -1,4 +1,3 @@
-// InstaGallery App - Project Settings
 pluginManagement {
     repositories {
         google {
