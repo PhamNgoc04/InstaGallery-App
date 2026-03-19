@@ -99,7 +99,9 @@ class SignInViewModel @Inject constructor(
             when (response) {
                 is ApiResponse.Success -> {
                     session.storeToken(response.data.token)
+                    session.storeRefreshToken(response.data.refreshToken)
                     session.storeUserId(response.data.userId)
+                    session.storeUsername(response.data.username)
 
                     _uiState.value = SignInEvent.Success
                     _navigationEvent.emit(SignInNavigationEvent.NavigateToHomeFeed)

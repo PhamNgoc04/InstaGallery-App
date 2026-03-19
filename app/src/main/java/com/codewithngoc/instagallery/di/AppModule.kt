@@ -14,7 +14,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-private const val BASE_URL = "http://10.0.2.2:8080/"
+// Dùng trên máy thật: chạy trước lệnh ADB: D:\Android\SDK\platform-tools\adb.exe reverse tcp:8080 tcp:8080
+private const val BASE_URL = "http://127.0.0.1:8080/"
 
 @Module
 @InstallIn(SingletonComponent::class)

@@ -20,42 +20,52 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.ui.features.auth.AuthScreen
+import com.codewithngoc.instagallery.ui.features.auth.forgotpassword.ForgotPasswordScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInViewModel
 import com.codewithngoc.instagallery.ui.features.auth.signup.SignUpScreen
+import com.codewithngoc.instagallery.ui.features.booking.BookingListScreen
+import com.codewithngoc.instagallery.ui.features.booking.CreateBookingScreen
+import com.codewithngoc.instagallery.ui.features.booking.PhotographerListScreen
+import com.codewithngoc.instagallery.ui.features.booking.RatingScreen
+import com.codewithngoc.instagallery.ui.features.explore.ExploreScreen
+import com.codewithngoc.instagallery.ui.features.followers.FollowersScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.detailspost.PostDetailScreen
+import com.codewithngoc.instagallery.ui.features.messages.MessagesScreen
+import com.codewithngoc.instagallery.ui.features.messages.chatdetail.ChatDetailScreen
 import com.codewithngoc.instagallery.ui.features.newpost.NewPostScreen
 import com.codewithngoc.instagallery.ui.features.newpost.editpost.EditPostScreen
 import com.codewithngoc.instagallery.ui.features.news.NewsScreen
+import com.codewithngoc.instagallery.ui.features.notifications.NotificationScreen
 import com.codewithngoc.instagallery.ui.features.profile.LogOutScreen
 import com.codewithngoc.instagallery.ui.features.profile.ProfileScreen
 import com.codewithngoc.instagallery.ui.features.profile.editprofilepost.EditPostProfileScreen
 import com.codewithngoc.instagallery.ui.features.profile.settings.SettingsScreen
+import com.codewithngoc.instagallery.ui.features.profile.settings.changepassword.ChangePasswordScreen
+import com.codewithngoc.instagallery.ui.features.profile.settings.changelanguage.ChangeLanguageScreen
+import com.codewithngoc.instagallery.ui.features.profile.settings.editprofile.EditProfileScreen
+import com.codewithngoc.instagallery.ui.features.search.SearchScreen
+import com.codewithngoc.instagallery.ui.features.userprofile.UserProfileScreen
 import com.codewithngoc.instagallery.ui.splash.SplashScreen
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
-
     object Login : Screen("login")
-
     object SignUp : Screen("signup")
-
     object Logout : Screen("logout")
+    object ForgotPassword : Screen("forgot_password")
 
     //================
-
     object HomeFeed : Screen("homefeed")
-
+    object Explore : Screen("explore")
+    object Search : Screen("search")
     object News : Screen("news")
-
     object NewPost : Screen("new_post")
-
     object Profile : Screen("profile")
-
+    object Notifications : Screen("notifications")
 
     //==========
-
     object PostDetail : Screen("postdetail/{postId}") {
         fun createRoute(postId: String) = "postdetail/$postId"
     }
@@ -71,14 +81,40 @@ sealed class Screen(val route: String) {
     }
 
     object Settings : Screen("settings")
+    object ChangePassword : Screen("change_password")
+    object ChangeLanguage : Screen("change_language")
+    object EditProfile : Screen("edit_profile")
 
+    // Social
+    object UserProfile : Screen("user_profile/{userId}") {
+        fun createRoute(userId: Long) = "user_profile/$userId"
+    }
+
+    object Followers : Screen("followers/{userId}") {
+        fun createRoute(userId: Long) = "followers/$userId"
+    }
+
+    // Messaging
+    object Messages : Screen("messages")
+    object ChatDetail : Screen("chat_detail/{conversationId}") {
+        fun createRoute(conversationId: Long) = "chat_detail/$conversationId"
+    }
+
+    // Booking
+    object PhotographerList : Screen("photographer_list")
+    object CreateBooking : Screen("create_booking/{photographerId}") {
+        fun createRoute(photographerId: Long) = "create_booking/$photographerId"
+    }
+    object BookingList : Screen("booking_list")
+    object Rating : Screen("rating/{bookingId}") {
+        fun createRoute(bookingId: Long) = "rating/$bookingId"
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
-//    startDestination: String = Screen.Auth.route,
     startDestination: String = Screen.Splash.route,
     modifier: Modifier = Modifier,
     session: InstaGallerySession = hiltViewModel<SignInViewModel>().session
@@ -102,30 +138,39 @@ fun AppNavigation(
         }
 
         composable(Screen.SignUp.route) {
-            SignUpScreen(
-                navController = navController
-            )
+            SignUpScreen(navController = navController)
         }
 
         composable(Screen.Logout.route) {
             LogOutScreen(navController = navController)
         }
 
+        composable(Screen.ForgotPassword.route) {
+            ForgotPasswordScreen(navController = navController)
+        }
 
         navigation(
             route = "main_graph",
             startDestination = Screen.HomeFeed.route
         ) {
             composable(Screen.HomeFeed.route) {
-                HomeFeedScreen(
-                    navController = navController
-                )
+                HomeFeedScreen(navController = navController)
+            }
+
+            composable(Screen.Explore.route) {
+                ExploreScreen(navController = navController)
+            }
+
+            composable(Screen.Search.route) {
+                SearchScreen(navController = navController)
             }
 
             composable(Screen.News.route) {
-                NewsScreen(
-                    navController = navController
-                )
+                NewsScreen(navController = navController)
+            }
+
+            composable(Screen.Notifications.route) {
+                NotificationScreen(navController = navController)
             }
 
             composable(
@@ -149,24 +194,14 @@ fun AppNavigation(
                 EditPostScreen(selectedUri = uri, navController = navController)
             }
 
-            composable(
-                route = Screen.Profile.route
-            ) {
-
-                val currentUserId = session.getUserId()?.toIntOrNull()
-
-                // Kiểm tra và truyền userId vào ProfileScreen
-                if (currentUserId != null) {
+            composable(route = Screen.Profile.route) {
+                val currentUserId = session.getUserId()
+                if (currentUserId != -1L) {
                     ProfileScreen(navController, userId = currentUserId)
                 } else {
-                    // Xử lý trường hợp không có userId
                     LaunchedEffect(Unit) {
-                        // Chuyển hướng về màn hình đăng nhập
                         navController.navigate(Screen.Login.route) {
-                            // Xóa các màn hình trước đó khỏi back stack
-                            popUpTo(navController.graph.startDestinationId) {
-                                inclusive = true
-                            }
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         }
                     }
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -175,28 +210,89 @@ fun AppNavigation(
                 }
             }
 
-            // Edit Post from Profile Screen
+            // Edit Post from Profile
             composable(
                 route = Screen.EditPostProfile.route,
                 arguments = listOf(navArgument("postId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getString("postId") ?: ""
-
                 EditPostProfileScreen(
-                    // bạn có thể fetch dữ liệu từ postId trong ViewModel
                     onCancel = { },
-                    onUpdate = { updatedContent ->
-                        navController.popBackStack()
-                    },
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                    onUpdate = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
-            // Settings Screen
+            // Settings
             composable(Screen.Settings.route) {
                 SettingsScreen(navController = navController)
+            }
+
+            composable(Screen.ChangePassword.route) {
+                ChangePasswordScreen(navController = navController)
+            }
+
+            composable(Screen.ChangeLanguage.route) {
+                ChangeLanguageScreen(navController = navController)
+            }
+
+            composable(Screen.EditProfile.route) {
+                EditProfileScreen(navController = navController)
+            }
+
+            // User Profile (other users)
+            composable(
+                route = Screen.UserProfile.route,
+                arguments = listOf(navArgument("userId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getLong("userId") ?: 0L
+                UserProfileScreen(userId = userId, navController = navController)
+            }
+
+            // Followers
+            composable(
+                route = Screen.Followers.route,
+                arguments = listOf(navArgument("userId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getLong("userId") ?: 0L
+                FollowersScreen(userId = userId, navController = navController)
+            }
+
+            // Messaging
+            composable(Screen.Messages.route) {
+                MessagesScreen(navController = navController)
+            }
+
+            composable(
+                route = Screen.ChatDetail.route,
+                arguments = listOf(navArgument("conversationId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val conversationId = backStackEntry.arguments?.getLong("conversationId") ?: 0L
+                ChatDetailScreen(conversationId = conversationId, navController = navController)
+            }
+
+            // Booking
+            composable(Screen.PhotographerList.route) {
+                PhotographerListScreen(navController = navController)
+            }
+
+            composable(
+                route = Screen.CreateBooking.route,
+                arguments = listOf(navArgument("photographerId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val photographerId = backStackEntry.arguments?.getLong("photographerId") ?: 0L
+                CreateBookingScreen(photographerId = photographerId, navController = navController)
+            }
+
+            composable(Screen.BookingList.route) {
+                BookingListScreen(navController = navController)
+            }
+
+            composable(
+                route = Screen.Rating.route,
+                arguments = listOf(navArgument("bookingId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val bookingId = backStackEntry.arguments?.getLong("bookingId") ?: 0L
+                RatingScreen(bookingId = bookingId, navController = navController)
             }
         }
     }

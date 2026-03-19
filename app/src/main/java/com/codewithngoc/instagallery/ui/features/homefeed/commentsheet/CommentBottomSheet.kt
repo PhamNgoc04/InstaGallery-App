@@ -43,7 +43,7 @@ import com.codewithngoc.instagallery.data.utils.formatTimeAgo
 @Composable
 fun CommentBottomSheet(
     onDismiss: () -> Unit,
-    postId: Int,
+    postId: Long,
     viewModel: CommentViewModel = hiltViewModel()
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -126,7 +126,7 @@ fun CommentBottomSheet(
                             viewModel.addComment(
                                 postId,
                                 commentText,
-                                parentCommentId = replyingToComment?.commentId
+                                parentId = replyingToComment?.commentId
                             )
                             commentText = ""
                             replyingToComment = null
@@ -168,7 +168,7 @@ fun CommentItem(
     comment: CommentResponse,
     onReplyClick: (CommentResponse) -> Unit
 ) {
-    val startPadding = if (comment.parentCommentId != null) 48.dp else 0.dp
+    val startPadding = if (comment.parentId != null) 48.dp else 0.dp
 
     Row(
         modifier = Modifier
@@ -177,7 +177,7 @@ fun CommentItem(
         verticalAlignment = Alignment.Top
     ) {
         AsyncImage(
-            model = comment.author.profilePictureUrl,
+            model = comment.avatar,
             contentDescription = "Avatar",
             modifier = Modifier
                 .size(36.dp)
@@ -189,7 +189,7 @@ fun CommentItem(
         Column(modifier = Modifier.weight(1f)) {
             // Username + content
             Text(
-                text = comment.author.username,
+                text = comment.username,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
@@ -253,7 +253,7 @@ fun CommentInputSection(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Đang trả lời ${replyingTo.author.username}", color = Color.Gray)
+                Text(text = "Đang trả lời ${replyingTo.username}", color = Color.Gray)
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = onCancelReply) {
                     Icon(Icons.Default.Close, contentDescription = "Hủy", tint = Color.Gray)
@@ -282,7 +282,7 @@ fun CommentInputSection(
                 onValueChange = onCommentTextChange,
                 placeholder = {
                     Text(
-                        text = if (replyingTo != null) "Trả lời ${replyingTo.author.username}..." else "Thêm bình luận...",
+                        text = if (replyingTo != null) "Trả lời ${replyingTo.username}..." else "Thêm bình luận...",
                         color = Color.Gray
                     )
                 },

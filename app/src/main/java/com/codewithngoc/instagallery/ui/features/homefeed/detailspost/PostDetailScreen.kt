@@ -12,9 +12,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.codewithngoc.instagallery.ui.features.homefeed.PostItem
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentBottomSheet
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentViewModel
 import com.codewithngoc.instagallery.ui.features.homefeed.likeAction.LikeViewModel
@@ -26,7 +26,7 @@ import com.codewithngoc.instagallery.ui.features.homefeed.postmorebottomsheet.Po
 fun PostDetailScreen(
     navController: NavController,
     viewModel: PostDetailViewModel = hiltViewModel(),
-    commentViewModel: CommentViewModel = hiltViewModel() // <-- Inject CommentViewModel
+    commentViewModel: CommentViewModel = hiltViewModel()
 ) {
 
     // Tìm đến back stack của graph cha
@@ -44,12 +44,9 @@ fun PostDetailScreen(
     var showMoreBottomSheet by remember { mutableStateOf(false) }
 
     // --- LẮNG NGHE SỰ KIỆN TỪ CÁC VIEWMODEL KHÁC ---
-    // Effect này chạy 1 lần để thiết lập các listener
     LaunchedEffect(Unit) {
-        // 1. Yêu cầu ViewModel lắng nghe sự kiện like/unlike để cập nhật likeCount real-time
         viewModel.observeLikeEvents(likeViewModel)
 
-        // 2. Lắng nghe sự kiện có bình luận mới để cập nhật commentCount
         commentViewModel.newCommentEvent.collect { (commentedPostId, _) ->
             val currentState = uiState
             if (currentState is PostDetailUiState.Success && currentState.post.postId == commentedPostId) {
@@ -58,13 +55,9 @@ fun PostDetailScreen(
         }
     }
 
-    // Effect này chạy mỗi khi uiState thay đổi (đặc biệt là khi load xong post)
+    // Backend mới không cần checkLiked riêng
     LaunchedEffect(uiState) {
-        // 3. Kiểm tra trạng thái like ban đầu khi post được tải thành công
-        if (uiState is PostDetailUiState.Success) {
-            val post = (uiState as PostDetailUiState.Success).post
-            likeViewModel.checkLiked(post.postId)
-        }
+        // No-op
     }
 
     Scaffold(
@@ -98,17 +91,13 @@ fun PostDetailScreen(
                 }
                 is PostDetailUiState.Success -> {
                     val post = state.post
-                    val isLiked = likedPosts[post.postId] ?: false
 
-                    // TÁI SỬ DỤNG PostItem VỚI ĐẦY ĐỦ CHỨC NĂNG
-                    PostItem(
-                        post = post,
-                        isLiked = isLiked,
-                        onPostClick = { },
-                        onProfileClick = { /* TODO: Điều hướng đến trang cá nhân */ },
-                        onLikeClick = { likeViewModel.toggleLike(post.postId, post.likeCount) },
-                        onCommentClick = { showCommentBottomSheet = true }, // <-- Mở comment
-                        onMoreClick = { showMoreBottomSheet = true }      // <-- Mở more options
+                    // TODO: Tạm hiển thị đơn giản
+                    // PostItem yêu cầu FeedPostResponse, PostDetailViewModel dùng PostResponse
+                    // Khi backend có getPostById, cần map PostResponse → display
+                    Text(
+                        text = post.caption ?: "Chi tiết bài viết",
+                        modifier = Modifier.padding(16.dp)
                     )
 
                     // --- HIỂN THỊ CÁC BOTTOMSHEET ---

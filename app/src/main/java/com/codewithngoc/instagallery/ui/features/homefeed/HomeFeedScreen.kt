@@ -42,11 +42,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import com.codewithngoc.instagallery.R
-import com.codewithngoc.instagallery.data.model.AuthorInfoResponse
-import com.codewithngoc.instagallery.data.model.MediaResponse
-import com.codewithngoc.instagallery.data.model.MediaType
-import com.codewithngoc.instagallery.data.model.PostResponse
-import com.codewithngoc.instagallery.data.model.PostVisibility
+import com.codewithngoc.instagallery.data.model.FeedPostResponse
+import com.codewithngoc.instagallery.data.model.FeedMediaResponse
 import com.codewithngoc.instagallery.data.utils.formatTimeAgo
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentBottomSheet
 import com.codewithngoc.instagallery.ui.features.homefeed.commentsheet.CommentViewModel
@@ -85,14 +82,14 @@ fun HomeFeedScreen(
     var showCommentDialog by remember { mutableStateOf(false) }
 
     // Biến trạng thái để hiển thị MoreBottomSheet
-    var selectedPostIdForComment by remember { mutableStateOf<Int?>(null) }
+    var selectedPostIdForComment by remember { mutableStateOf<Long?>(null) }
 
     // ✅ Khởi tạo CommentViewModel dùng để hiển thị CommentBottomSheet
 //    val commentViewModel: CommentViewModel = hiltViewModel()
 
     // Biến trạng thái cho Share/More BottomSheet
     var showMoreBottomSheet by remember { mutableStateOf(false) }
-    var selectedPostIdForMore by remember { mutableStateOf<Int?>(null) }
+    var selectedPostIdForMore by remember { mutableStateOf<Long?>(null) }
 
     // 1. Theo dõi sự kiện từ CommentViewModel
     LaunchedEffect(Unit) {
@@ -101,11 +98,9 @@ fun HomeFeedScreen(
         }
     }
 
-    // 2. Gọi loadLikes & checkLiked khi posts thay đổi
+    // 2. FeedPostResponse đã có likeCount/isLiked từ backend, không cần checkLiked riêng
     LaunchedEffect(posts) {
-        posts.forEach { post ->
-            likeViewModel.checkLiked(post.postId)
-        }
+        // Backend mới đã trả isLiked trong feed (nếu có), không cần gọi checkLiked
     }
 
     // 3. Theo dõi lắng nghe sự kiện từ LikeViewModel
@@ -128,7 +123,7 @@ fun HomeFeedScreen(
 
     // Hiển thị Scaffold
     Scaffold(
-        topBar = { HomeInsTopBar() }, // ✅ Sử dụng HomeInsTopBar
+        topBar = { HomeInsTopBar(navController = navController) }, // ✅ Sử dụng HomeInsTopBar
         bottomBar = { HomeInsBottomBar(navController = navController) }, // ✅ Sử dụng HomeInsBottomBar
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
@@ -148,7 +143,7 @@ fun HomeFeedScreen(
                         posts = posts,
                         likedPosts = likedPosts,
                         onPostClick = { postId -> viewModel.onPostClick(postId) },
-                        onProfileClick = { userId -> /* TODO: Navigate to Profile screen */ },
+                        onProfileClick = { userId -> navController.navigate(Screen.UserProfile.createRoute(userId)) },
                         onLikeClick = { post ->
                             // ✅ Truyền postId và likeCount hiện tại để LikeViewModel cập nhật chính xác
                             likeViewModel.toggleLike(post.postId, post.likeCount)
@@ -191,13 +186,13 @@ fun HomeFeedScreen(
 @Composable
 fun PostList(
     modifier: Modifier = Modifier,
-    posts: List<PostResponse>,
-    likedPosts : Map<Int, Boolean>,
-    onPostClick: (Int) -> Unit,
-    onProfileClick: (Int) -> Unit,
-    onLikeClick: (PostResponse) -> Unit,
-    onCommentClick: (Int) -> Unit,
-    onMoreClick: (Int) -> Unit,
+    posts: List<FeedPostResponse>,
+    likedPosts : Map<Long, Boolean>,
+    onPostClick: (Long) -> Unit,
+    onProfileClick: (Long) -> Unit,
+    onLikeClick: (FeedPostResponse) -> Unit,
+    onCommentClick: (Long) -> Unit,
+    onMoreClick: (Long) -> Unit,
 ) {
     LazyColumn(
         modifier = modifier
@@ -212,7 +207,7 @@ fun PostList(
                 post = post,
                 isLiked = isLiked,
                 onPostClick = { onPostClick(post.postId) }, // Mở trang chi tiết bài viết khi click vào ảnh
-                onProfileClick = { onProfileClick(post.author.userId) }, // Mở trang cá nhân khi click vào avatar/tên
+                onProfileClick = { onProfileClick(post.userId) }, // Mở trang cá nhân khi click vào avatar/tên
                 onLikeClick = { onLikeClick(post) }, // Xử lý sự kiện thích bài viết
                 onCommentClick = { onCommentClick(post.postId) }, // Xử lý sự kiện bình luận
                 onMoreClick = { onMoreClick(post.postId) } // Xử lý sự kiện click More
@@ -224,13 +219,13 @@ fun PostList(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostItem(
-    post: PostResponse,
+    post: FeedPostResponse,
     isLiked: Boolean,
-    onPostClick: (Int) -> Unit, // Đổi tên hàm để rõ ràng hơn
-    onProfileClick: (Int) -> Unit, // Hành động khi click avatar
-    onLikeClick: (PostResponse) -> Unit,    // Hành động khi click like
-    onCommentClick: (Int) -> Unit, // Hành động khi click comment
-    onMoreClick: (Int) -> Unit, // Hành động khi click More
+    onPostClick: (Long) -> Unit, // Đổi tên hàm để rõ ràng hơn
+    onProfileClick: (Long) -> Unit, // Hành động khi click avatar
+    onLikeClick: (FeedPostResponse) -> Unit,    // Hành động khi click like
+    onCommentClick: (Long) -> Unit, // Hành động khi click comment
+    onMoreClick: (Long) -> Unit, // Hành động khi click More
 ) {
     Column(
         modifier = Modifier
@@ -240,13 +235,15 @@ fun PostItem(
             .padding(bottom = 16.dp) // Khoảng cách giữa các bài đăng
     ) {
         PostHeader(
-            author = post.author,
+            username = post.username,
+            userAvatar = post.userAvatar,
+            userId = post.userId,
             onProfileClick = onProfileClick, // Truyền hành động click avatar
             onMoreClick = { onMoreClick(post.postId) },
-            postCreatedAt = post.createdAt?: "",
+            postCreatedAt = post.createdAt,
         )
         // --- Post Image (Clickable) ---
-        val firstImageUrl = post.media.firstOrNull()?.mediaFileUrl
+        val firstImageUrl = post.media.firstOrNull()?.url
         if (firstImageUrl != null) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -287,9 +284,11 @@ fun PostItem(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostHeader(
-    author: AuthorInfoResponse,
-    onProfileClick: (Int) -> Unit,
-    onMoreClick: (Int) -> Unit,
+    username: String,
+    userAvatar: String?,
+    userId: Long,
+    onProfileClick: (Long) -> Unit,
+    onMoreClick: (Long) -> Unit,
     postCreatedAt: String?,
 ) {
     Row(
@@ -301,12 +300,12 @@ fun PostHeader(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { onProfileClick(author.userId) } // Thêm clickable cho cả row
+            modifier = Modifier.clickable { onProfileClick(userId) } // Thêm clickable cho cả row
         ) {
             // Avatar
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(author.profilePictureUrl.takeIf { !it.isNullOrBlank() })
+                    .data(userAvatar.takeIf { !it.isNullOrBlank() })
                     .crossfade(true)
                     .build(),
                 contentDescription = "Profile Image",
@@ -314,13 +313,13 @@ fun PostHeader(
                     .size(40.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
-                placeholder = ColorPainter(Color.LightGray), // ✅ thay shape bằng màu xám
-                error = painterResource(R.drawable.ic_error) // ✅ thay bằng 1 vector drawable
+                placeholder = ColorPainter(Color.LightGray),
+                error = ColorPainter(Color.LightGray) // Avatar null → hiện hình tròn xám
             )
             // User Info
             Column(modifier = Modifier.padding(horizontal = 12.dp)) {
                 Text(
-                    text = author.username,
+                    text = username,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = Color.Black
@@ -334,7 +333,7 @@ fun PostHeader(
         }
 //        // Share Icon
 //        // ✅ Nút more icon để mở bottom sheet
-        IconButton(onClick = { onMoreClick(author.userId) }) {
+        IconButton(onClick = { onMoreClick(userId) }) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_more),
                 contentDescription = "More options",
@@ -421,7 +420,7 @@ fun PostActions(
 }
 
 @Composable
-fun HomeInsTopBar() {
+fun HomeInsTopBar(navController: NavController? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -431,24 +430,39 @@ fun HomeInsTopBar() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_register_logo),
-            contentDescription = "Logo",
-            modifier = Modifier.size(30.dp)
-        )
-        Text(
-            text = "InstaGallery",
-            style = TextStyle(
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = colorResource(id = R.color.orange_button_login)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_register_logo),
+                contentDescription = "Logo",
+                modifier = Modifier.size(30.dp)
             )
-        )
-        Image(
-            painter = painterResource(id = R.drawable.ic_search),
-            contentDescription = "Search Icon",
-            modifier = Modifier.size(30.dp)
-        )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "InstaGallery",
+                style = TextStyle(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(id = R.color.orange_button_login)
+                )
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { navController?.navigate(Screen.Search.route) }) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_search),
+                    contentDescription = "Search",
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            IconButton(onClick = { navController?.navigate(Screen.Messages.route) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_gui),
+                    contentDescription = "Messages",
+                    modifier = Modifier.size(26.dp),
+                    tint = Color.DarkGray
+                )
+            }
+        }
     }
 }
 
@@ -471,17 +485,17 @@ fun HomeInsBottomBar(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_homefeed),
-                contentDescription = "Home",
+                contentDescription = "Trang chủ",
                 modifier = Modifier.size(standardIconSize)
             )
         }
         BottomNavItem(
-            isSelected = currentRoute == Screen.News.route,
-            onClick = { navController.navigate(Screen.News.route) }
+            isSelected = currentRoute == Screen.Explore.route,
+            onClick = { navController.navigate(Screen.Explore.route) }
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_danhsach),
-                contentDescription = "News",
+                painter = painterResource(R.drawable.ic_search),
+                contentDescription = "Khám phá",
                 modifier = Modifier.size(standardIconSize)
             )
         }
@@ -491,17 +505,17 @@ fun HomeInsBottomBar(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_them_bai),
-                contentDescription = "Add Post",
+                contentDescription = "Đăng bài",
                 modifier = Modifier.size(standardIconSize)
             )
         }
         BottomNavItem(
-            isSelected = false,
-            onClick = { /* TODO: mở Notifications */ }
+            isSelected = currentRoute == Screen.Notifications.route,
+            onClick = { navController.navigate(Screen.Notifications.route) }
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_thong_bao),
-                contentDescription = "Notifications",
+                contentDescription = "Thông báo",
                 modifier = Modifier.size(standardIconSize)
             )
         }
@@ -515,7 +529,7 @@ fun HomeInsBottomBar(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_register_logo),
-                contentDescription = "Profile",
+                contentDescription = "Hồ sơ",
                 modifier = Modifier
                     .size(standardIconSize)
                     .clip(CircleShape)
@@ -551,37 +565,36 @@ fun RowScope.BottomNavItem(
 @Composable
 fun HomeFeedScreenPreview() {
     val navController = rememberNavController()
-    // You'd need a mock ViewModel here to provide sample data
-    // For simplicity, we'll just show the PostList directly.
     val samplePosts = listOf(
-        PostResponse(
+        FeedPostResponse(
             postId = 1,
-            author = AuthorInfoResponse(userId = 1, username = "Baxter Johnson", profilePictureUrl = "https://example.com/baxter.png"),
-            caption = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed eiusmod tempor amet...",
+            userId = 1,
+            username = "Baxter Johnson",
+            userAvatar = "https://example.com/baxter.png",
+            caption = "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
             location = "Park",
-            visibility = PostVisibility.PUBLIC,
-            media = listOf(MediaResponse(1, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e", mediaType = MediaType.IMAGE, position = 0)),
+            media = listOf(FeedMediaResponse(1, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e", type = "IMAGE", orderIndex = 0)),
             likeCount = 12,
             commentCount = 5,
             createdAt = "2023-08-01T12:00:00Z"
         ),
-        PostResponse(
+        FeedPostResponse(
             postId = 2,
-            author = AuthorInfoResponse(userId = 2, username = "Hank Lozano", profilePictureUrl = "https://example.com/hank.png"),
+            userId = 2,
+            username = "Hank Lozano",
+            userAvatar = "https://example.com/hank.png",
             caption = "Another great day at the park!",
             location = "Park",
-            visibility = PostVisibility.PUBLIC,
-            media = listOf(MediaResponse(2, "https://images.unsplash.com/photo-1519985176271-adb1088fa94c", mediaType = MediaType.IMAGE, position = 1)),
+            media = listOf(FeedMediaResponse(2, "https://images.unsplash.com/photo-1519985176271-adb1088fa94c", type = "IMAGE", orderIndex = 1)),
             likeCount = 20,
             commentCount = 8,
             createdAt = "2023-08-02T15:30:00Z"
         )
     )
 
-    // ✅ Mock likedPosts để Preview không lỗi
     val likedPosts = mapOf(
-        1 to true,  // postId 1 đã like
-        2 to false  // postId 2 chưa like
+        1L to true,
+        2L to false
     )
 
     Scaffold(

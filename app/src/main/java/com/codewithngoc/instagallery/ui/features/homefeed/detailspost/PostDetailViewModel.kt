@@ -3,6 +3,7 @@ package com.codewithngoc.instagallery.ui.features.homefeed.detailspost
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.codewithngoc.instagallery.data.model.FeedPostResponse
 import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.repository.PostRepository
@@ -33,26 +34,18 @@ class PostDetailViewModel @Inject constructor(
     init {
         val postId: String? = savedStateHandle["postId"]
         if (postId != null) {
-            fetchPostDetails(postId.toInt())
+            // Backend mới không có getPostById, hiển thị lỗi hoặc dùng cache
+            _uiState.value = PostDetailUiState.Error("Chi tiết bài viết tạm chưa hỗ trợ với backend mới.")
         } else {
             _uiState.value = PostDetailUiState.Error("Post ID not found.")
         }
     }
 
-    private fun fetchPostDetails(postId: Int) {
-        viewModelScope.launch {
-            _uiState.value = PostDetailUiState.Loading
-            when (val response = postRepository.getPostById(postId)) {
-                is ApiResponse.Success -> {
-                    _uiState.value = Success(response.data)
-                }
-                is ApiResponse.Error -> {
-                    _uiState.value = Error(response.message ?: "Failed to load post.")
-                }
-
-                is ApiResponse.Exception -> TODO()
-            }
-        }
+    /**
+     * Set post data trực tiếp (truyền từ feed list thay vì gọi API getPostById)
+     */
+    fun setPost(post: PostResponse) {
+        _uiState.value = PostDetailUiState.Success(post)
     }
 
     fun incrementCommentCount() {

@@ -26,7 +26,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import com.codewithngoc.instagallery.data.model.PostResponse
+import com.codewithngoc.instagallery.data.model.FeedPostResponse
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeInsBottomBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,7 +83,7 @@ fun NewsScreen(
 // Các Composable NewsList và NewsItem giữ nguyên như cũ, không cần thay đổi
 
 @Composable
-fun NewsList(posts: List<PostResponse>) {
+fun NewsList(posts: List<FeedPostResponse>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
@@ -97,7 +97,7 @@ fun NewsList(posts: List<PostResponse>) {
 
 @Composable
 fun NewsItem(
-    post: PostResponse,
+    post: FeedPostResponse,
     onClick: () -> Unit
 ) {
     Card(
@@ -112,7 +112,7 @@ fun NewsItem(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val imageUrl = post.media.firstOrNull()?.mediaFileUrl ?: ""
+            val imageUrl = post.media.firstOrNull()?.url ?: ""
             Image(
                 painter = rememberAsyncImagePainter(
                     ImageRequest.Builder(LocalContext.current).data(data = imageUrl).crossfade(true).build()
@@ -132,7 +132,7 @@ fun NewsItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "by ${post.author.username}",
+                    text = "by ${post.username}",
                     fontSize = 14.sp,
                     color = Color.Gray,
                     maxLines = 1,

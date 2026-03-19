@@ -26,7 +26,7 @@ fun SettingsScreen(navController: NavController) {
             TopAppBar(
                 title = {
                     Text(
-                        "Settings",
+                        "Cài đặt",
                         modifier = Modifier.fillMaxWidth(),
                         fontWeight = FontWeight.Bold
                     )
@@ -45,19 +45,19 @@ fun SettingsScreen(navController: NavController) {
                 .fillMaxSize()
         ) {
             // Phần Account
-            SettingsSectionHeader("Account")
-            SettingsItem(title = "Edit Profile", onClick = { /* TODO: Handle click */ })
-            SettingsItem(title = "Change Password", onClick = { /* TODO: Handle click */ })
-            SettingsItem(title = "Language", isLastItem = true, onClick = { /* TODO: Handle click */ })
+            SettingsSectionHeader("Tài khoản")
+            SettingsItem(title = "Chỉnh sửa hồ sơ", onClick = { navController.navigate(Screen.EditProfile.route) })
+            SettingsItem(title = "Đổi mật khẩu", onClick = { navController.navigate(Screen.ChangePassword.route) })
+            SettingsItem(title = "Ngôn ngữ", isLastItem = true, onClick = { navController.navigate(Screen.ChangeLanguage.route) })
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Phần Other
-            SettingsSectionHeader("Other")
-            SettingsItem(title = "Privacy Policy", onClick = { /* TODO: Handle click */ })
-            SettingsItem(title = "Contact Us", onClick = { /* TODO: Handle click */ })
-            SettingsItem(title = "About App", onClick = { /* TODO: Handle click */ })
-            SettingsItem(title = "Logout", isLastItem = true, onClick = {
+            SettingsSectionHeader("Khác")
+            SettingsItem(title = "Chính sách bảo mật", onClick = { /* TODO: Handle click */ })
+            SettingsItem(title = "Liên hệ", onClick = { /* TODO: Handle click */ })
+            SettingsItem(title = "Về ứng dụng", onClick = { /* TODO: Handle click */ })
+            SettingsItem(title = "Đăng xuất", isLastItem = true, onClick = {
                 navController.navigate(Screen.Logout.route) {
                     launchSingleTop = true
                 }

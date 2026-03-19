@@ -1,25 +1,57 @@
 package com.codewithngoc.instagallery.data.model
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Serializable
+/**
+ * Request tạo bài đăng - khớp với CreatePostRequest của backend Ktor mới
+ */
 data class CreatePostRequest(
-    val caption: String?,
-    val visibility: PostVisibility,
-    val location: String?,
-    val media: List<MediaItem>
+    @SerializedName("caption") val caption: String?,
+    @SerializedName("location") val location: String? = null,
+    @SerializedName("visibility") val visibility: PostVisibility = PostVisibility.PUBLIC,
+    @SerializedName("media") val media: List<CreateMediaItemRequest>,
+    @SerializedName("tags") val tags: List<String>? = null
 )
 
-@Serializable
-data class MediaItem(
-    val mediaFileUrl: String,
-    val thumbnailUrl: String? = null,
-    val mediaType: MediaType,
-    val position: Int,
-    val filterId: Int? = null,
-    val metadata: String? = null
+/**
+ * Media item trong CreatePostRequest - khớp với CreateMediaItemRequest
+ */
+data class CreateMediaItemRequest(
+    @SerializedName("mediaFileUrl") val mediaFileUrl: String,
+    @SerializedName("thumbnailUrl") val thumbnailUrl: String? = null,
+    @SerializedName("mediaType") val mediaType: MediaType = MediaType.IMAGE,
+    @SerializedName("width") val width: Int? = null,
+    @SerializedName("height") val height: Int? = null,
+    @SerializedName("duration") val duration: Int? = null
 )
 
+/**
+ * Request cập nhật bài đăng
+ */
+data class UpdatePostRequest(
+    @SerializedName("caption") val caption: String? = null,
+    @SerializedName("location") val location: String? = null,
+    @SerializedName("visibility") val visibility: PostVisibility? = null,
+    @SerializedName("tags") val tags: List<String>? = null
+)
+
+/**
+ * Request presigned URL cho upload media
+ */
+data class PresignedUrlRequest(
+    @SerializedName("fileName") val fileName: String,
+    @SerializedName("contentType") val contentType: String,
+    @SerializedName("fileSize") val fileSize: Long
+)
+
+/**
+ * Response presigned URL
+ */
+data class PresignedUrlResponse(
+    @SerializedName("uploadUrl") val uploadUrl: String,
+    @SerializedName("fileUrl") val fileUrl: String,
+    @SerializedName("expiresAt") val expiresAt: Long
+)
 
 enum class PostVisibility { PUBLIC, PRIVATE, FRIENDS_ONLY }
 

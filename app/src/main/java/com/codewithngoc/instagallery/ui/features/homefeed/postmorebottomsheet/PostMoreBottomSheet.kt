@@ -17,7 +17,7 @@ import com.codewithngoc.instagallery.R
 @Composable
 fun PostMoreBottomSheet(
     onDismiss: () -> Unit,
-    postId: Int
+    postId: Long
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 

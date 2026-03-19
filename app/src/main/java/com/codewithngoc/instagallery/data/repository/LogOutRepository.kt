@@ -3,7 +3,7 @@ package com.codewithngoc.instagallery.data.repository
 import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.remote.ApiResponse
-import com.codewithngoc.instagallery.data.remote.safeAuthApiCall
+import com.codewithngoc.instagallery.data.remote.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,28 +12,23 @@ class LogOutRepository @Inject constructor(
     private val api: InstaGalleryApi,
     private val session: InstaGallerySession
 ) {
-    // Cách 1: Gọi API logout để xoá session trên server
-//    suspend fun logout(): ApiResponse<Unit> {
-//        val token = session.getToken() ?: return ApiResponse.Error(401, "❌ No token found")
-//        val refreshToken = session.getRefreshToken() ?: return ApiResponse.Error(400, "❌ No refresh token found")
-//
-//        val result = safeAuthApiCall(token) {
-//            api.logout(mapOf("refreshToken" to refreshToken))
-//        }
-//
-//        if (result is ApiResponse.Success) {
-//            session.clearTokens() // ✅ chỉ clear khi server xác nhận đã xoá session
-//        }
-//
-//        return result
-//    }
-
-    // Cách 2: Không gọi API logout, chỉ xoá token + refreshToken khỏi session
+    /**
+     * Đăng xuất: gọi API logout với X-Refresh-Token header, sau đó xóa session local.
+     * Backend mới: POST /api/v1/auth/logout (yêu cầu header X-Refresh-Token)
+     */
     suspend fun logout(): ApiResponse<Unit> {
-        // Xoá token + refreshToken khỏi session
-        session.clearTokens()
+        val refreshToken = session.getRefreshToken()
 
-        // Trả về success luôn
+        // Nếu có refreshToken => gọi API để xóa session trên server
+        if (!refreshToken.isNullOrEmpty()) {
+            val result = safeApiCall { api.logout(refreshToken) }
+            // Dù thành công hay thất bại, vẫn xóa token local
+            session.clearTokens()
+            return result
+        }
+
+        // Nếu không có refreshToken => chỉ xóa local
+        session.clearTokens()
         return ApiResponse.Success(Unit)
     }
 }

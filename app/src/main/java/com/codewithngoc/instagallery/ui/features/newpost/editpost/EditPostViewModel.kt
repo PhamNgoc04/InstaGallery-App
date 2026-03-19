@@ -9,11 +9,11 @@ import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.InstaGallerySession
 import com.codewithngoc.instagallery.data.model.CreatePostRequest
-import com.codewithngoc.instagallery.data.model.MediaItem
+import com.codewithngoc.instagallery.data.model.CreateMediaItemRequest
 import com.codewithngoc.instagallery.data.model.MediaType
-import com.codewithngoc.instagallery.data.model.PostResponse
 import com.codewithngoc.instagallery.data.model.PostVisibility
-import com.codewithngoc.instagallery.data.utils.uriToMultipart
+import com.codewithngoc.instagallery.data.remote.safeApiCall
+import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedViewModel
 import com.codewithngoc.instagallery.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -81,55 +81,49 @@ class EditPostViewModel @Inject constructor(
             _uiState.value = EditPostEvent.Loading
             try {
                 val uri = selectedMediaUri.value ?: return@launch
-                val multipart = context.uriToMultipart("file", uri)
 
-                val uploadResult = instaGalleryApi.uploadFile(multipart)
-                if (uploadResult.isSuccessful) {
-                    val uploadedUrl = uploadResult.body()?.url
-                    if (!uploadedUrl.isNullOrEmpty()) {
-                        val createRequest = CreatePostRequest(
-                            caption = caption,
-                            visibility = PostVisibility.PUBLIC,
-                            location = "",
-                            media = listOf(
-                                MediaItem(
-                                    mediaFileUrl = uploadedUrl,
-                                    mediaType = MediaType.IMAGE,
-                                    position = 0
-                                )
-                            )
+                // TODO: Backend mới dùng presigned URL flow
+                // Tạm thời tạo post với URI local
+                val createRequest = CreatePostRequest(
+                    caption = caption,
+                    visibility = PostVisibility.PUBLIC,
+                    location = _location.value,
+                    media = listOf(
+                        CreateMediaItemRequest(
+                            mediaFileUrl = uri.toString(),
+                            mediaType = MediaType.IMAGE
                         )
+                    )
+                )
 
-                        val postCreationResponse = instaGalleryApi.createPost(createRequest)
-                        if (postCreationResponse.isSuccessful && postCreationResponse.body() != null) {
-                            val newPost = postCreationResponse.body()!!
+                val response = safeApiCall {
+                    instaGalleryApi.createPost(createRequest)
+                }
 
-                            _uiState.value = EditPostEvent.Success
+                when (response) {
+                    is ApiResponse.Success -> {
+                        _uiState.value = EditPostEvent.Success
 
-                            // Load lại toàn bộ để đồng bộ dữ liệu
-                            homeFeedViewModel.loadAllPosts()
+                        // Load lại feed để đồng bộ dữ liệu
+                        homeFeedViewModel.loadFeed()
 
-                            // Quay lại màn hình Home
-                            navController.navigate(Screen.HomeFeed.route) {
-                                popUpTo(Screen.HomeFeed.route) { inclusive = true }
-                            }
-                        } else {
-                            _uiState.value = EditPostEvent.Error("Tạo bài viết thất bại")
+                        // Quay lại màn hình Home
+                        navController.navigate(Screen.HomeFeed.route) {
+                            popUpTo(Screen.HomeFeed.route) { inclusive = true }
                         }
-                    } else {
-                        _uiState.value = EditPostEvent.Error("Không nhận được URL ảnh")
                     }
-                } else {
-                    _uiState.value = EditPostEvent.Error("Upload thất bại")
+                    is ApiResponse.Error -> {
+                        _uiState.value = EditPostEvent.Error("Tạo bài viết thất bại: ${response.message}")
+                    }
+                    is ApiResponse.Exception -> {
+                        _uiState.value = EditPostEvent.Error("Lỗi: ${response.exception.message}")
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.value = EditPostEvent.Error("Lỗi: ${e.message}")
             }
         }
     }
-
-
-
 
     private fun Int.getPostErrorMessage(): String {
         return when (this) {
