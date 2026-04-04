@@ -26,4 +26,9 @@ class PostRepository @Inject constructor(
     suspend fun deletePost(postId: Long): ApiResponse<Unit> {
         return safeApiCall { api.deletePost(postId) }
     }
+
+    // Xem chi tiết bài đăng
+    suspend fun getPostDetail(postId: Long): ApiResponse<FeedPostResponse> {
+        return safeApiCall { api.getPostDetail(postId) }
+    }
 }

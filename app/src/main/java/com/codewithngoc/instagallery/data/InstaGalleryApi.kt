@@ -37,6 +37,9 @@ interface InstaGalleryApi {
     @POST("api/v1/posts")
     suspend fun createPost(@Body request: CreatePostRequest): Response<ApiResponseWrapper<PostResponse>>
 
+    @GET("api/v1/posts/{id}")
+    suspend fun getPostDetail(@Path("id") postId: Long): Response<ApiResponseWrapper<FeedPostResponse>>
+
     @GET("api/v1/posts/feed")
     suspend fun getFeed(
         @Query("page") page: Int = 1,

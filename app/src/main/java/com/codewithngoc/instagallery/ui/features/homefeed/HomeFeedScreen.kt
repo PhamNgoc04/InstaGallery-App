@@ -126,16 +126,26 @@ fun HomeFeedScreen(
         topBar = { HomeInsTopBar(navController = navController) }, // ✅ Sử dụng HomeInsTopBar
         bottomBar = { HomeInsBottomBar(navController = navController) }, // ✅ Sử dụng HomeInsBottomBar
     ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            when (uiState.value) {
-//                is HomeFeedViewModel.PostEvent.Loading -> {
-//                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-//                }
-                is HomeFeedViewModel.PostEvent.Error -> {
+        Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+            when {
+                uiState.value is HomeFeedViewModel.PostEvent.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                uiState.value is HomeFeedViewModel.PostEvent.Error -> {
                     Text(
                         text = (uiState.value as HomeFeedViewModel.PostEvent.Error).message,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+                posts.isEmpty() -> {
+                    Text(
+                        text = "Trang chủ chưa có bài viết nào.\nHãy trở thành người đầu tiên đăng bài nhé!",
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        color = Color.Gray,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        fontSize = 16.sp
                     )
                 }
                 else -> {

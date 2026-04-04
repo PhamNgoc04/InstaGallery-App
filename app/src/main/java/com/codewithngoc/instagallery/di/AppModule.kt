@@ -15,6 +15,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 // Dùng trên máy thật: chạy trước lệnh ADB: D:\Android\SDK\platform-tools\adb.exe reverse tcp:8080 tcp:8080
+// or D:\Android\SDK\platform-tools\adb.exe -d reverse tcp:8080 tcp:8080
 private const val BASE_URL = "http://127.0.0.1:8080/"
 
 @Module

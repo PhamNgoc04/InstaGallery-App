@@ -123,6 +123,35 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    // Xóa bài viết
+    fun deletePost(postId: Long) {
+        viewModelScope.launch {
+            val result = postRepository.deletePost(postId)
+            if (result is ApiResponse.Success) {
+                // Xoá thành công, update lại UI state
+                val currentState = _uiState.value
+                if (currentState is ProfileUiState.Success) {
+                    val updatedPosts = currentState.posts.filter { it.postId != postId }
+                    
+                    // Cập nhật postCount cho user object nếu cần
+                    val updatedUser = currentState.user.copy(postCount = updatedPosts.size)
+                    val updatedStates = currentState.states.map {
+                        if (it.label == "Posts") it.copy(count = updatedPosts.size.toString())
+                        else it
+                    }
+
+                    _uiState.value = currentState.copy(
+                        user = updatedUser,
+                        states = updatedStates,
+                        posts = updatedPosts
+                    )
+                }
+            } else {
+                // Ignore error handling for now or implement SnackBar logic later if needed
+            }
+        }
+    }
+
 }
 
 fun UserProfileResponse.toUiUser(

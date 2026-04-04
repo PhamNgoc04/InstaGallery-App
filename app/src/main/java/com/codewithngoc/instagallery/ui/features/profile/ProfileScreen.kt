@@ -63,6 +63,10 @@ fun ProfileScreen(
     var selectedPostIdForComment by remember { mutableStateOf<Long?>(null) }
     var showMoreBottomSheet by remember { mutableStateOf(false) }
     var selectedPostIdForMore by remember { mutableStateOf<Long?>(null) }
+    
+    // State cho Xóa Post
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var postToDelete by remember { mutableStateOf<Long?>(null) }
 
     val commentViewModel: CommentViewModel = hiltViewModel()
 
@@ -156,10 +160,13 @@ fun ProfileScreen(
                             onShareClick = { },
                             onEditClick = {
                                 navController.navigate(
-                                    Screen.EditPostProfile.route
+                                    Screen.EditPostProfile.createRoute(post.postId.toString())
                                 )
                             },
-                            onDeleteClick = { }
+                            onDeleteClick = { 
+                                postToDelete = post.postId
+                                showDeleteDialog = true
+                            }
                         )
                     }
                 }
@@ -172,6 +179,29 @@ fun ProfileScreen(
         CommentBottomSheet(
             postId = selectedPostIdForComment!!,
             onDismiss = { showCommentBottomSheet = false; selectedPostIdForComment = null }
+        )
+    }
+
+    // Delete Confirmation Dialog
+    if (showDeleteDialog && postToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false; postToDelete = null },
+            title = { Text("Xóa bài viết", fontWeight = FontWeight.Bold) },
+            text = { Text("Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deletePost(postToDelete!!)
+                    showDeleteDialog = false
+                    postToDelete = null
+                }) {
+                    Text("Xóa", color = Color.Red, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false; postToDelete = null }) {
+                    Text("Hủy")
+                }
+            }
         )
     }
 }
