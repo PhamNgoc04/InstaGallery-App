@@ -382,7 +382,7 @@ fun PostActions(
 
                     Icon(
                         painter = painterResource(likeIcon),
-                        contentDescription = "Like",
+                        contentDescription = "LIKE",
                         tint = it,
                         modifier = Modifier.size(26.dp)
                     )
@@ -403,7 +403,7 @@ fun PostActions(
             ) {
                 Image(
                     painterResource(R.drawable.ic_comment),
-                    contentDescription = "Comment",
+                    contentDescription = "COMMENT",
                     modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -587,7 +587,8 @@ fun HomeFeedScreenPreview() {
             media = listOf(FeedMediaResponse(1, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e", type = "IMAGE", orderIndex = 0)),
             likeCount = 12,
             commentCount = 5,
-            createdAt = "2023-08-01T12:00:00Z"
+            createdAt = "2023-08-01T12:00:00Z",
+            updatedAt = "2023-08-01T12:00:00Z"
         ),
         FeedPostResponse(
             postId = 2,
@@ -599,7 +600,8 @@ fun HomeFeedScreenPreview() {
             media = listOf(FeedMediaResponse(2, "https://images.unsplash.com/photo-1519985176271-adb1088fa94c", type = "IMAGE", orderIndex = 1)),
             likeCount = 20,
             commentCount = 8,
-            createdAt = "2023-08-02T15:30:00Z"
+            createdAt = "2023-08-02T15:30:00Z",
+            updatedAt = "2023-08-02T15:30:00Z"
         )
     )
 
