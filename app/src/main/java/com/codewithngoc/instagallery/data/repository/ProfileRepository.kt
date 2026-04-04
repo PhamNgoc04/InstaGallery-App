@@ -35,6 +35,16 @@ class ProfileRepository @Inject constructor(
     }
 
     /**
+     * Cập nhật thông tin user hiện tại
+     */
+    suspend fun updateProfile(request: com.codewithngoc.instagallery.data.model.UpdateUserProfileRequest): ApiResponse<UserProfileResponse> {
+        val token = session.getToken()
+        return safeAuthApiCall(token) {
+            api.updateProfile(request)
+        }
+    }
+
+    /**
      * Lấy followers (chỉ cần totalRecords từ meta)
      */
     suspend fun getFollowers(userId: Long): ApiResponse<PaginatedFollowsResponse> {

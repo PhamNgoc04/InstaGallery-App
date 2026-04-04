@@ -24,38 +24,68 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import com.codewithngoc.instagallery.data.model.PostVisibility
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditPostProfileScreen(
+    postId: String = "",
     onBack: () -> Unit = {},
     onCancel: () -> Unit = {},
-    onUpdate: (String) -> Unit = {}
+    onUpdate: () -> Unit = {},
+    viewModel: EditPostProfileViewModel = hiltViewModel()
 ) {
-    var postContent by remember {
-        mutableStateOf("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+    val uiState by viewModel.uiState.collectAsState()
+
+    var postContent by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("Chưa có vị trí") }
+    var visibility by remember { mutableStateOf(PostVisibility.PUBLIC) }
+
+    // Dùng để đảm bảo việc đọc data vào textbox chỉ diễn ra 1 lần
+    var isDataLoaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (postId.isNotEmpty()) {
+            postId.toLongOrNull()?.let { viewModel.loadPostData(it) }
+        }
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState is EditPostState.Success && !isDataLoaded) {
+            val post = (uiState as EditPostState.Success).post
+            postContent = post.caption ?: ""
+            location = post.location ?: "Chưa có vị trí"
+            // Nếu backend trả về visibility thì set ở đây (tạm giả lập vì FeedPostResponse có thể chưa có enum này)
+            visibility = PostVisibility.PUBLIC
+            isDataLoaded = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is EditPostEvent.UpdateSuccess -> {
+                    onUpdate() // Đóng và back lại
+                }
+                is EditPostEvent.UpdateError -> {
+                    // Logic hiện thông báo lỗi (snackbar/toast)
+                }
+            }
+        }
     }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Chỉnh sửa",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                },
+                title = { Text("Chỉnh sửa", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -63,185 +93,180 @@ fun EditPostProfileScreen(
                         Text("Hủy", color = Color.Gray, fontSize = 16.sp)
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White
-                )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
         },
         containerColor = Color.White
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // 1. Phần thông tin người dùng
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Ảnh đại diện
-                Image(
-                    painter = rememberAsyncImagePainter("https://i.imgur.com/KzX3s9n.png"), // Thay thế bằng URL ảnh
-                    contentDescription = "Avatar",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                // Tên người dùng
-                Text(
-                    text = "Ngọc Jackson",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp
-                )
-            }
+        Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+            when (val state = uiState) {
+                is EditPostState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                is EditPostState.Error -> {
+                    Text(text = state.message, color = Color.Red, modifier = Modifier.align(Alignment.Center))
+                }
+                is EditPostState.Success -> {
+                    val post = state.post
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        // 1. User info
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AsyncImage(
+                                model = post.userAvatar,
+                                contentDescription = "Avatar",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.LightGray)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = post.username,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 16.sp
+                            )
+                        }
 
-            // 2. Phần ảnh bài đăng
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.8f) // Tỉ lệ ảnh dọc
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            ) {
-                // Ảnh chính
-                Image(
-                    painter = rememberAsyncImagePainter("https://images.unsplash.com/photo-1507525428034-b723cf961d3e"), // Thay thế bằng URL ảnh
-                    contentDescription = "Post Image",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                        // 2. Post Image
+                        val firstImageUrl = post.media.firstOrNull()?.url
+                        if (!firstImageUrl.isNullOrEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(0.8f) // Tỉ lệ ảnh dọc
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            ) {
+                                AsyncImage(
+                                    model = firstImageUrl,
+                                    contentDescription = "Post Image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                // Nút X (chưa xử lý backend xoá ảnh riêng lẻ, nên có thể bỏ hoặc để placeholder)
+                            }
+                        }
 
-                // Nút "X" (Close) ở góc trên bên phải
-                IconButton(
-                    onClick = { /* Xử lý sự kiện xóa ảnh */ },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .size(30.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Remove Image",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
+                        // 3. Edit input
+                        OutlinedTextField(
+                            value = postContent,
+                            onValueChange = { postContent = it },
+                            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color(0xFFE0E0E0),
+                                focusedBorderColor = Color.Gray
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 4. Location Row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { /* Mở picker (sẽ code sau) */ }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.LocationOn,
+                                contentDescription = "Location",
+                                tint = Color.DarkGray
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = location.ifEmpty { "Chưa có vị trí" },
+                                fontSize = 16.sp,
+                                color = Color.DarkGray,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                contentDescription = "Arrow right",
+                                tint = Color.LightGray
+                            )
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color(0xFFEEEEEE))
+
+                        // 5. Visibility Row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { /* Mở picker (sẽ code sau) */ }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Lock,
+                                contentDescription = "Visibility",
+                                tint = Color.DarkGray
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = if (visibility == PostVisibility.PUBLIC) "Công khai" else "Bạn bè",
+                                fontSize = 16.sp,
+                                color = Color.DarkGray,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                contentDescription = "Arrow right",
+                                tint = Color.LightGray
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Nút Update
+                        Button(
+                            onClick = {
+                                postId.toLongOrNull()?.let { pid ->
+                                    viewModel.updatePost(
+                                        postId = pid,
+                                        caption = postContent,
+                                        location = location,
+                                        visibility = visibility
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 24.dp)
+                                .height(52.dp)
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFFFE8C00), Color(0xFFF85D00))
+                                    ),
+                                    shape = RoundedCornerShape(26.dp)
+                                ),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = Color.White
+                            ),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Cập nhật", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
-
-            // 3. Phần nội dung có thể chỉnh sửa
-            OutlinedTextField(
-                value = postContent,
-                onValueChange = { postContent = it },
-                textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedBorderColor = Color.Gray
-                )
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 4. Location Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { /* Mở location picker */ }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.LocationOn,
-                    contentDescription = "Location",
-                    tint = Color.DarkGray
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "TP. Hồ Chí Minh",
-                    fontSize = 16.sp,
-                    color = Color.DarkGray,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = "Arrow right",
-                    tint = Color.LightGray
-                )
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color(0xFFEEEEEE))
-
-            // 5. Visibility Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { /* Mở visibility picker */ }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Lock,
-                    contentDescription = "Visibility",
-                    tint = Color.DarkGray
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Công khai",
-                    fontSize = 16.sp,
-                    color = Color.DarkGray,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = "Arrow right",
-                    tint = Color.LightGray
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Nút Update
-            Button(
-                onClick = { onUpdate(postContent) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 24.dp)
-                    .height(52.dp)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(Color(0xFFFE8C00), Color(0xFFF85D00)) // Gradient màu cam
-                        ),
-                        shape = RoundedCornerShape(26.dp)
-                    ),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent, // Làm cho màu nền trong suốt để thấy gradient
-                    contentColor = Color.White
-                ),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Text("Cập nhật", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewEditPostScreen() {
-    MaterialTheme {
-        EditPostProfileScreen()
     }
 }

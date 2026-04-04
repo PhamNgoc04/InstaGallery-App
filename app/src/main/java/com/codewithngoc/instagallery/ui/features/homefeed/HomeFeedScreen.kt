@@ -58,8 +58,7 @@ import java.time.Instant
 @Composable
 fun HomeFeedScreen(
     navController: NavController,
-    viewModel: HomeFeedViewModel = hiltViewModel(),
-    commentViewModel: CommentViewModel = hiltViewModel()
+    viewModel: HomeFeedViewModel = hiltViewModel()
 ) {
 
     val mainGraphBackStackEntry = remember(navController.currentBackStackEntry) {
@@ -67,6 +66,7 @@ fun HomeFeedScreen(
     }
 
     val likeViewModel: LikeViewModel = hiltViewModel(mainGraphBackStackEntry)
+    val commentViewModel: CommentViewModel = hiltViewModel(mainGraphBackStackEntry)
 
 
     // Biến trạng thái để hiển thị Loading
@@ -231,6 +231,7 @@ fun PostList(
 fun PostItem(
     post: FeedPostResponse,
     isLiked: Boolean,
+    isDetail: Boolean = false,
     onPostClick: (Long) -> Unit, // Đổi tên hàm để rõ ràng hơn
     onProfileClick: (Long) -> Unit, // Hành động khi click avatar
     onLikeClick: (FeedPostResponse) -> Unit,    // Hành động khi click like
@@ -284,7 +285,7 @@ fun PostItem(
             text = post.caption ?: "",
             fontSize = 14.sp,
             lineHeight = 20.sp,
-            maxLines = 2,
+            maxLines = if (isDetail) Int.MAX_VALUE else 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 16.dp)
         )

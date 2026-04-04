@@ -69,4 +69,9 @@ object AppModule {
         return InstaGallerySession(context)
     }
 
+    @Provides
+    fun provideNotificationRepository(api: InstaGalleryApi): com.codewithngoc.instagallery.data.repository.NotificationRepository {
+        return com.codewithngoc.instagallery.data.repository.NotificationRepository(api)
+    }
+
 }

@@ -45,6 +45,9 @@ import com.codewithngoc.instagallery.ui.features.profile.settings.SettingsScreen
 import com.codewithngoc.instagallery.ui.features.profile.settings.changepassword.ChangePasswordScreen
 import com.codewithngoc.instagallery.ui.features.profile.settings.changelanguage.ChangeLanguageScreen
 import com.codewithngoc.instagallery.ui.features.profile.settings.editprofile.EditProfileScreen
+import com.codewithngoc.instagallery.ui.features.profile.settings.privacypolicy.PrivacyPolicyScreen
+import com.codewithngoc.instagallery.ui.features.profile.settings.contact.ContactScreen
+import com.codewithngoc.instagallery.ui.features.profile.settings.about.AboutScreen
 import com.codewithngoc.instagallery.ui.features.search.SearchScreen
 import com.codewithngoc.instagallery.ui.features.userprofile.UserProfileScreen
 import com.codewithngoc.instagallery.ui.splash.SplashScreen
@@ -84,6 +87,9 @@ sealed class Screen(val route: String) {
     object ChangePassword : Screen("change_password")
     object ChangeLanguage : Screen("change_language")
     object EditProfile : Screen("edit_profile")
+    object PrivacyPolicy : Screen("privacy_policy")
+    object Contact : Screen("contact")
+    object About : Screen("about")
 
     // Social
     object UserProfile : Screen("user_profile/{userId}") {
@@ -215,8 +221,10 @@ fun AppNavigation(
                 route = Screen.EditPostProfile.route,
                 arguments = listOf(navArgument("postId") { type = NavType.StringType })
             ) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
                 EditPostProfileScreen(
-                    onCancel = { },
+                    postId = postId,
+                    onCancel = { navController.popBackStack() },
                     onUpdate = { navController.popBackStack() },
                     onBack = { navController.popBackStack() }
                 )
@@ -237,6 +245,18 @@ fun AppNavigation(
 
             composable(Screen.EditProfile.route) {
                 EditProfileScreen(navController = navController)
+            }
+
+            composable(Screen.PrivacyPolicy.route) {
+                PrivacyPolicyScreen(navController = navController)
+            }
+
+            composable(Screen.Contact.route) {
+                ContactScreen(navController = navController)
+            }
+
+            composable(Screen.About.route) {
+                AboutScreen(navController = navController)
             }
 
             // User Profile (other users)

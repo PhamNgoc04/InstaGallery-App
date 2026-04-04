@@ -37,21 +37,51 @@ class CommentViewModel @Inject constructor(
 
     // Sắp xếp comment theo cấu trúc cha - con (đệ quy)
     private fun sortComments(comments: List<CommentResponse>): List<CommentResponse> {
-        val repliesMap = comments.filter { it.parentId != null }.groupBy { it.parentId }
-        val rootComments = comments.filter { it.parentId == null }.sortedByDescending { it.createdAt }
+        val flatComments = mutableListOf<CommentResponse>()
+        fun flatten(commentList: List<CommentResponse>) {
+            for (c in commentList) {
+                flatComments.add(c)
+                if (!c.replies.isNullOrEmpty()) {
+                    flatten(c.replies)
+                }
+            }
+        }
+        flatten(comments)
+
+        // 1. Dùng danh sách trực tiếp, không lọc trùng theo ID để tránh mất data nếu Backend lỗi ID = 0
+        val uniqueComments = flatComments
+        val validIds = uniqueComments.map { it.commentId }.filter { it != 0L }.toSet()
+
+        // 2. Tìm Root: (Không có parent, hoặc parent lỗi/không tồn tại)
+        val rootComments = uniqueComments.filter { 
+            it.parentId == null || it.parentId == 0L || !validIds.contains(it.parentId)
+        }.sortedByDescending { it.createdAt }
+
+        // 3. Gom Replies:
+        val repliesMap = uniqueComments.filter { 
+            it.parentId != null && it.parentId != 0L && validIds.contains(it.parentId)
+        }.groupBy { it.parentId }
 
         val sortedList = mutableListOf<CommentResponse>()
+        val visited = mutableSetOf<Long>()
 
         fun addReplies(comment: CommentResponse) {
+            if (visited.contains(comment.commentId) && comment.commentId != 0L) return
+            if (comment.commentId != 0L) visited.add(comment.commentId)
+            
             sortedList.add(comment)
+            
+            // Comment con thì xếp cũ nhất lên đầu (để đọc từ trên xuống)
             repliesMap[comment.commentId]?.sortedBy { it.createdAt }?.forEach { reply ->
-                addReplies(reply) // đệ quy với reply
+                if (reply !== comment) addReplies(reply)
             }
         }
 
-        rootComments.forEach { root ->
-            addReplies(root)
-        }
+        rootComments.forEach { root -> addReplies(root) }
+
+        // Vớt lại bất kỳ comment nào chưa được thêm
+        val missing = uniqueComments.filter { !sortedList.contains(it) }
+        sortedList.addAll(missing.sortedByDescending { it.createdAt })
 
         return sortedList
     }

@@ -34,14 +34,14 @@ import com.codewithngoc.instagallery.ui.navigation.Screen
 @Composable
 fun PostDetailScreen(
     navController: NavController,
-    viewModel: PostDetailViewModel = hiltViewModel(),
-    commentViewModel: CommentViewModel = hiltViewModel()
+    viewModel: PostDetailViewModel = hiltViewModel()
 ) {
 
     val mainGraphBackStackEntry = remember(navController.currentBackStackEntry) {
         navController.getBackStackEntry("main_graph")
     }
     val likeViewModel: LikeViewModel = hiltViewModel(mainGraphBackStackEntry)
+    val commentViewModel: CommentViewModel = hiltViewModel(mainGraphBackStackEntry)
 
     val uiState by viewModel.uiState.collectAsState()
     val likedPosts by likeViewModel.likedPosts.collectAsState()
@@ -51,6 +51,9 @@ fun PostDetailScreen(
     // Yêu cầu load comment khi PostDetailUiState chuyển Success
     var commentsLoadedForPostId by remember { mutableStateOf<Long?>(null) }
     val currentContext = LocalContext.current
+    
+    // Trạng thái theo dõi bình luận đang được trả lời
+    var replyingToComment by remember { mutableStateOf<CommentResponse?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.observeLikeEvents(likeViewModel)
@@ -60,6 +63,17 @@ fun PostDetailScreen(
             if (currentState is PostDetailUiState.Success && currentState.post.postId == commentedPostId) {
                 viewModel.incrementCommentCount()
             }
+        }
+    }
+
+    val commentEvent by commentViewModel.commentEvent.collectAsState()
+    LaunchedEffect(commentEvent) {
+        if (commentEvent is CommentViewModel.CommentEvent.Error) {
+            Toast.makeText(
+                currentContext,
+                (commentEvent as CommentViewModel.CommentEvent.Error).message,
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -79,9 +93,8 @@ fun PostDetailScreen(
             if (uiState is PostDetailUiState.Success) {
                 val post = (uiState as PostDetailUiState.Success).post
                 var commentText by remember { mutableStateOf("") }
-                var replyingToComment by remember { mutableStateOf<CommentResponse?>(null) }
                 
-                Column {
+                Column(modifier = Modifier.navigationBarsPadding().imePadding()) {
                     HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 1.dp)
                     CommentInputSection(
                         commentText = commentText,
@@ -140,6 +153,7 @@ fun PostDetailScreen(
                             PostItem(
                                 post = post,
                                 isLiked = isLiked,
+                                isDetail = true, // Cấp thuộc tính này để tắt maxLines = 2
                                 onPostClick = { }, // Không mở trang chi tiết nữa vì đang ở trong nó
                                 onProfileClick = { userId -> 
                                     navController.navigate(Screen.UserProfile.createRoute(userId))
@@ -169,7 +183,7 @@ fun PostDetailScreen(
                         items(comments) { comment ->
                             CommentItem(
                                 comment = comment,
-                                onReplyClick = { /* Set replying status in realistic view */ }
+                                onReplyClick = { replyingToComment = it }
                             )
                         }
                         

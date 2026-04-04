@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.codewithngoc.instagallery.R
 import com.codewithngoc.instagallery.data.model.FeedPostResponse
@@ -50,10 +53,15 @@ import com.codewithngoc.instagallery.ui.navigation.Screen
 fun ProfileScreen(
     navController: NavController,
     userId: Long,
-    viewModel: ProfileViewModel = hiltViewModel(),
-    likeViewModel : LikeViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    val mainGraphBackStackEntry = remember(navController.currentBackStackEntry) {
+        navController.getBackStackEntry("main_graph")
+    }
+    val likeViewModel: LikeViewModel = hiltViewModel(mainGraphBackStackEntry)
+    val commentViewModel: CommentViewModel = hiltViewModel(mainGraphBackStackEntry)
 
     // ✅ Theo dõi likedPosts từ LikeViewModel
     val likedPosts by likeViewModel.likedPosts.collectAsState()
@@ -68,10 +76,19 @@ fun ProfileScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var postToDelete by remember { mutableStateOf<Long?>(null) }
 
-    val commentViewModel: CommentViewModel = hiltViewModel()
 
-    LaunchedEffect(userId) {
-        viewModel.loadProfile(userId)
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, userId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadProfile(userId)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Theo dõi lắng nghe sự kiện từ LikeVieModel

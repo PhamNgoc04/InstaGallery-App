@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 data class LanguageItem(val flag: String, val name: String, val code: String)
 
@@ -32,6 +34,7 @@ fun ChangeLanguageScreen(navController: NavController) {
         LanguageItem("🇷🇺", "Russian", "ru"),
         LanguageItem("🇰🇷", "Korean", "ko")
     )
+    val context = LocalContext.current
     var selected by remember { mutableStateOf("vi") }
 
     Scaffold(
@@ -87,7 +90,10 @@ fun ChangeLanguageScreen(navController: NavController) {
 
             // Update button
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = {
+                    Toast.makeText(context, "Đã đổi ngôn ngữ: $selected", Toast.LENGTH_SHORT).show()
+                    navController.popBackStack()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)

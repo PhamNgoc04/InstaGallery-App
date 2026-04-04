@@ -14,16 +14,33 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChangePasswordScreen(navController: NavController) {
+fun ChangePasswordScreen(
+    navController: NavController,
+    viewModel: ChangePasswordViewModel = hiltViewModel()
+) {
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var showCurrent by remember { mutableStateOf(false) }
     var showNew by remember { mutableStateOf(false) }
     var showConfirm by remember { mutableStateOf(false) }
+
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState) {
+        if (uiState is ChangePasswordState.Success) {
+            Toast.makeText(context, (uiState as ChangePasswordState.Success).message, Toast.LENGTH_SHORT).show()
+            viewModel.resetState()
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -124,15 +141,27 @@ fun ChangePasswordScreen(navController: NavController) {
 
             // Update button
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = { viewModel.changePassword(currentPassword, newPassword) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B35)),
-                enabled = currentPassword.isNotBlank() && newPassword.isNotBlank() && confirmPassword == newPassword
+                enabled = currentPassword.isNotBlank() && newPassword.isNotBlank() && confirmPassword == newPassword && uiState !is ChangePasswordState.Loading
             ) {
-                Text("Cập nhật", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                if (uiState is ChangePasswordState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                } else {
+                    Text("Cập nhật", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            
+            if (uiState is ChangePasswordState.Error) {
+                Text(
+                    text = (uiState as ChangePasswordState.Error).message,
+                    color = Color.Red,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
         }
     }
