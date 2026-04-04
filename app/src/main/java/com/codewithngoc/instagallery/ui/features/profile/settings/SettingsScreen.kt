@@ -54,9 +54,9 @@ fun SettingsScreen(navController: NavController) {
 
             // Phần Other
             SettingsSectionHeader("Khác")
-            SettingsItem(title = "Chính sách bảo mật", onClick = { /* TODO: Handle click */ })
-            SettingsItem(title = "Liên hệ", onClick = { /* TODO: Handle click */ })
-            SettingsItem(title = "Về ứng dụng", onClick = { /* TODO: Handle click */ })
+            SettingsItem(title = "Chính sách bảo mật", onClick = { navController.navigate(Screen.PrivacyPolicy.route) })
+            SettingsItem(title = "Liên hệ", onClick = { navController.navigate(Screen.Contact.route) })
+            SettingsItem(title = "Về ứng dụng", onClick = { navController.navigate(Screen.About.route) })
             SettingsItem(title = "Đăng xuất", isLastItem = true, onClick = {
                 navController.navigate(Screen.Logout.route) {
                     launchSingleTop = true

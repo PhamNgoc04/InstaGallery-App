@@ -15,6 +15,7 @@ data class CommentResponse(
     @SerializedName("parentId") val parentId: Long? = null,
     @SerializedName("replyCount") val replyCount: Int = 0,
     @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("replies") val replies: List<CommentResponse>? = null,
 )
 
 /**

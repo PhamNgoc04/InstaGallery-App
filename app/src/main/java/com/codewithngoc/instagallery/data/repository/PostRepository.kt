@@ -5,6 +5,7 @@ import com.codewithngoc.instagallery.data.model.CreatePostRequest
 import com.codewithngoc.instagallery.data.model.FeedPostResponse
 import com.codewithngoc.instagallery.data.model.PaginatedFeedResponse
 import com.codewithngoc.instagallery.data.model.PostResponse
+import com.codewithngoc.instagallery.data.model.UpdatePostRequest
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.remote.safeApiCall
 import javax.inject.Inject
@@ -25,5 +26,15 @@ class PostRepository @Inject constructor(
     // Xóa bài đăng
     suspend fun deletePost(postId: Long): ApiResponse<Unit> {
         return safeApiCall { api.deletePost(postId) }
+    }
+
+    // Xem chi tiết bài đăng
+    suspend fun getPostDetail(postId: Long): ApiResponse<FeedPostResponse> {
+        return safeApiCall { api.getPostDetail(postId) }
+    }
+
+    // Cập nhật bài đăng
+    suspend fun updatePost(postId: Long, request: UpdatePostRequest): ApiResponse<Unit> {
+        return safeApiCall { api.updatePost(postId, request) }
     }
 }

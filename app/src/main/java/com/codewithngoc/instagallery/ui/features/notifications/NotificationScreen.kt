@@ -14,71 +14,105 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 
-data class NotificationItem(
-    val id: Int,
-    val username: String,
-    val type: String, // LIKE, COMMENT, FOLLOW, BOOKING
-    val message: String,
-    val time: String,
-    val isRead: Boolean = false
-)
-
 @Composable
-fun NotificationScreen(navController: NavController) {
-    val notifications = remember {
-        listOf(
-            NotificationItem(1, "Apollo Phelps", "LIKE", "đã thích bài viết của bạn", "5:30 PM"),
-            NotificationItem(2, "Bailey Stein", "COMMENT", "đã bình luận: Đẹp quá!", "4:42 PM"),
-            NotificationItem(3, "Leo Reilly", "FOLLOW", "đã bắt đầu follow bạn", "Hôm qua"),
-            NotificationItem(4, "Coco Gordon", "BOOKING", "đã đặt lịch chụp với bạn", "Hôm qua"),
-            NotificationItem(5, "Hank Lozano", "BOOKING", "đã đặt lịch chụp với bạn", "14/12"),
-            NotificationItem(6, "Rocky Ellison", "LIKE", "đã thích bài viết của bạn", "13/12")
-        )
-    }
+fun NotificationScreen(
+    navController: NavController,
+    viewModel: NotificationViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFF8F0))
-    ) {
-        // Header
-        Text(
-            "Thông báo",
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
-        )
+    Scaffold(
+        bottomBar = { com.codewithngoc.instagallery.ui.features.homefeed.HomeInsBottomBar(navController = navController) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(Color(0xFFFFF8F0))
+        ) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Thông báo",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                
+                if (uiState.notifications.any { !it.isRead }) {
+                    Text(
+                        text = "Đánh dấu đã đọc",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable { viewModel.markAllAsRead() }
+                    )
+                }
+            }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(notifications) { notification ->
-                NotificationRow(
-                    notification = notification,
-                    onClick = {
-                        when (notification.type) {
-                            "LIKE", "COMMENT" -> { /* Navigate to post */ }
-                            "FOLLOW" -> { navController.navigate("user_profile/${notification.id}") }
-                            "BOOKING" -> { navController.navigate("booking_list") }
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (uiState.isLoading && uiState.notifications.isEmpty()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else if (uiState.error != null && uiState.notifications.isEmpty()) {
+                    Text(
+                        text = uiState.error ?: "Đã xảy ra lỗi",
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        color = Color.Red,
+                        textAlign = TextAlign.Center
+                    )
+                } else if (uiState.notifications.isEmpty()) {
+                    Text(
+                        text = "Bạn không có thông báo nào",
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(uiState.notifications, key = { it.id }) { notification ->
+                            NotificationRow(
+                                notification = notification,
+                                onClick = {
+                                    viewModel.markAsRead(notification.id, notification.isRead)
+                                    when (notification.type) {
+                                        "LIKE", "COMMENT" -> { 
+                                            notification.targetId?.let { 
+                                                navController.navigate(com.codewithngoc.instagallery.ui.navigation.Screen.PostDetail.createRoute(it.toString())) 
+                                            }
+                                        }
+                                        "FOLLOW" -> { navController.navigate(com.codewithngoc.instagallery.ui.navigation.Screen.UserProfile.createRoute(notification.userId)) }
+                                        "BOOKING" -> { navController.navigate(com.codewithngoc.instagallery.ui.navigation.Screen.BookingList.route) }
+                                    }
+                                }
+                            )
                         }
                     }
-                )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun NotificationRow(notification: NotificationItem, onClick: () -> Unit) {
+private fun NotificationRow(notification: NotificationUI, onClick: () -> Unit) {
     val bgColor = if (!notification.isRead) Color(0xFFFFF0E0) else Color.Transparent
+
     val icon = when (notification.type) {
         "LIKE" -> "❤️"
         "COMMENT" -> "💬"
@@ -97,7 +131,7 @@ private fun NotificationRow(notification: NotificationItem, onClick: () -> Unit)
     ) {
         // Avatar
         AsyncImage(
-            model = null,
+            model = notification.avatarUrl,
             contentDescription = "Avatar",
             modifier = Modifier
                 .size(48.dp)
@@ -114,18 +148,24 @@ private fun NotificationRow(notification: NotificationItem, onClick: () -> Unit)
             Text(
                 notification.username,
                 fontWeight = FontWeight.Bold,
-                fontSize = 15.sp
+                fontSize = 15.sp,
+                color = Color.Black
             )
-            Text(
-                "$icon ${notification.message}",
-                fontSize = 13.sp,
-                color = Color.DarkGray
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = icon, fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = notification.message,
+                    fontSize = 13.sp,
+                    color = Color.DarkGray,
+                    maxLines = 2
+                )
+            }
         }
 
         // Time
         Text(
-            notification.time,
+            text = notification.timeAgo,
             fontSize = 12.sp,
             color = Color.Gray
         )

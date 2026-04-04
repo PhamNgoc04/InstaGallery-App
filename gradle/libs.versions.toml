@@ -19,8 +19,14 @@ kotlinxSerializationJson = "1.6.3"
 loggingInterceptor = "4.12.0"
 lifecycleRuntimeCompose = "2.8.7"
 uiResources = "1.4.3"
+mockk = "1.13.10"
+coroutinesTest = "1.8.0"
+turbine = "1.1.0"
 
 [libraries]
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-ui-resources = { module = "androidx.compose.ui:ui-resources", version.ref = "uiResources" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }

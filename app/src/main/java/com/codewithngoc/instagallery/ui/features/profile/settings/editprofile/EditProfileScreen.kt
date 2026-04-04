@@ -22,17 +22,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditProfileScreen(navController: NavController) {
-    var username by remember { mutableStateOf("") }
-    var fullName by remember { mutableStateOf("") }
-    var bio by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var birthDate by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
+fun EditProfileScreen(
+    navController: NavController,
+    viewModel: EditProfileViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    
+    val username by viewModel.username.collectAsState()
+    val fullName by viewModel.fullName.collectAsState()
+    val bio by viewModel.bio.collectAsState()
+    val email by viewModel.email.collectAsState()
+    val phone by viewModel.phone.collectAsState()
+    val birthDate by viewModel.birthDate.collectAsState()
+    val location by viewModel.location.collectAsState()
+    val avatarUrl by viewModel.avatarUrl.collectAsState()
+
+    LaunchedEffect(uiState) {
+        if (uiState is EditProfileState.UpdateSuccess) {
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -44,7 +57,7 @@ fun EditProfileScreen(navController: NavController) {
                     }
                 },
                 actions = {
-                    TextButton(onClick = { navController.popBackStack() }) {
+                    TextButton(onClick = { viewModel.updateProfile() }) {
                         Text("Lưu", color = Color(0xFFFF6B35), fontWeight = FontWeight.Bold)
                     }
                 },
@@ -66,7 +79,7 @@ fun EditProfileScreen(navController: NavController) {
             // Avatar with camera icon
             Box(contentAlignment = Alignment.BottomEnd) {
                 AsyncImage(
-                    model = null,
+                    model = avatarUrl,
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(100.dp)
@@ -89,29 +102,42 @@ fun EditProfileScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(32.dp))
 
             // Fields
-            ProfileField("Username:", username) { username = it }
-            ProfileField("Tên:", fullName) { fullName = it }
-            ProfileField("Chức danh:", bio) { bio = it }
-            ProfileField("Email:", email) { email = it }
-            ProfileField("Số điện thoại:", phone) { phone = it }
-            ProfileField("Ngày sinh:", birthDate) { birthDate = it }
-            ProfileField("Vị trí:", location) { location = it }
+            ProfileField("Username:", username) { viewModel.username.value = it }
+            ProfileField("Tên:", fullName) { viewModel.fullName.value = it }
+            ProfileField("Chức danh:", bio) { viewModel.bio.value = it }
+            ProfileField("Email:", email) { viewModel.email.value = it }
+            ProfileField("Số điện thoại:", phone) { viewModel.phone.value = it }
+            ProfileField("Ngày sinh:", birthDate) { viewModel.birthDate.value = it }
+            ProfileField("Vị trí:", location) { viewModel.location.value = it }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Update button
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = { viewModel.updateProfile() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(26.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B35))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B35)),
+                enabled = uiState !is EditProfileState.Loading
             ) {
-                Text("Cập nhật", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                if (uiState is EditProfileState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                } else {
+                    Text("Cập nhật", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+            
+            if (uiState is EditProfileState.Error) {
+                Text(
+                    text = (uiState as EditProfileState.Error).message,
+                    color = Color.Red,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }

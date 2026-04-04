@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 sealed interface PostDetailUiState {
     object Loading : PostDetailUiState
-    data class Success(val post: PostResponse) : PostDetailUiState
+    data class Success(val post: FeedPostResponse) : PostDetailUiState
     data class Error(val message: String) : PostDetailUiState
 }
 
@@ -32,19 +32,36 @@ class PostDetailViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
     init {
-        val postId: String? = savedStateHandle["postId"]
-        if (postId != null) {
-            // Backend mới không có getPostById, hiển thị lỗi hoặc dùng cache
-            _uiState.value = PostDetailUiState.Error("Chi tiết bài viết tạm chưa hỗ trợ với backend mới.")
+        val postIdStr: String? = savedStateHandle["postId"]
+        if (postIdStr != null) {
+            val postId = postIdStr.toLongOrNull()
+            if (postId != null) {
+                loadPostDetail(postId)
+            } else {
+                _uiState.value = PostDetailUiState.Error("Mã bài viết không hợp lệ.")
+            }
         } else {
             _uiState.value = PostDetailUiState.Error("Post ID not found.")
+        }
+    }
+
+    private fun loadPostDetail(postId: Long) {
+        viewModelScope.launch {
+            _uiState.value = PostDetailUiState.Loading
+            val response = postRepository.getPostDetail(postId)
+            if (response is ApiResponse.Success) {
+                _uiState.value = PostDetailUiState.Success(response.data)
+            } else {
+                val errorMsg = (response as? ApiResponse.Error)?.message ?: "Không thể tải chi tiết bài viết."
+                _uiState.value = PostDetailUiState.Error(errorMsg)
+            }
         }
     }
 
     /**
      * Set post data trực tiếp (truyền từ feed list thay vì gọi API getPostById)
      */
-    fun setPost(post: PostResponse) {
+    fun setPost(post: FeedPostResponse) {
         _uiState.value = PostDetailUiState.Success(post)
     }
 
