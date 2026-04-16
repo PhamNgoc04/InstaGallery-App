@@ -37,7 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.codewithngoc.instagallery.ui.features.notifications.NotificationViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
@@ -479,8 +481,17 @@ fun HomeInsTopBar(navController: NavController? = null) {
 fun HomeInsBottomBar(
     navController: NavController
 ) {
+    val currentBackStack by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStack?.destination?.route
 
-    val currentRoute = navController.currentBackStackEntry?.destination?.route
+    // Share NotificationViewModel qua main_graph để badge tồn tại xuyên màn hình
+    val mainEntry = remember(currentBackStack) {
+        try { navController.getBackStackEntry("main_graph") } catch (e: Exception) { null }
+    }
+    val notificationViewModel: NotificationViewModel? = mainEntry?.let { hiltViewModel(it) }
+    // ✅ FIX #11: Dùng remember để không tạo MutableStateFlow mới mỗi recompose
+    val fallbackFlow = remember { kotlinx.coroutines.flow.MutableStateFlow(0) }
+    val unreadCount by (notificationViewModel?.unreadCount ?: fallbackFlow).collectAsState()
 
     val standardIconSize = 26.dp
 
@@ -518,23 +529,36 @@ fun HomeInsBottomBar(
                 modifier = Modifier.size(standardIconSize)
             )
         }
+        // Icon chuông với badge đỏ
         BottomNavItem(
             isSelected = currentRoute == Screen.Notifications.route,
             onClick = { navController.navigate(Screen.Notifications.route) }
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_thong_bao),
-                contentDescription = "Thông báo",
-                modifier = Modifier.size(standardIconSize)
-            )
+            BadgedBox(
+                badge = {
+                    if (unreadCount > 0) {
+                        Badge(containerColor = Color(0xFFFF3B30)) {
+                            Text(
+                                text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                fontSize = 9.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_thong_bao),
+                    contentDescription = "Thông báo",
+                    modifier = Modifier.size(standardIconSize)
+                )
+            }
         }
 
         val isProfileSelected = currentRoute == Screen.Profile.route
         BottomNavItem(
             isSelected = isProfileSelected,
-            onClick = {
-                    navController.navigate(Screen.Profile.route)
-            }
+            onClick = { navController.navigate(Screen.Profile.route) }
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_register_logo),

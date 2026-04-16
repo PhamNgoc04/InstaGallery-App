@@ -1,4 +1,4 @@
-﻿package com.codewithngoc.instagallery.data.repository
+package com.codewithngoc.instagallery.data.repository
 
 import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.local.dao.ChatDao
@@ -33,6 +33,8 @@ class ChatRepository @Inject constructor(
         if (res is ApiResponse.Success) {
             val actData = res.data
             val entities = actData.conversations.map { ConversationEntity.fromConversationResponse(it, gson) }
+            // ✅ Xóa data cũ trước khi insert để tránh lẫn data giữa các user
+            chatDao.clearConversations()
             chatDao.insertConversations(entities)
             return ApiResponse.Success(Unit)
         }
@@ -109,5 +111,40 @@ class ChatRepository @Inject constructor(
         if (res is ApiResponse.Error) return ApiResponse.Error(res.code, res.message)
         if (res is ApiResponse.Exception) return ApiResponse.Exception(res.exception)
         return ApiResponse.Error(0, "Unknown Error")
+    }
+
+    /**
+     * Tìm conversation DIRECT với partnerId trong Room.
+     * Nếu không có → gọi API tạo mới → cache vào Room → trả về conversationId.
+     */
+    suspend fun getOrCreateDirectConversation(partnerId: Long): ApiResponse<Long> {
+        // 1. Tìm trong Room local trước
+        val existing = chatDao.getDirectConversationByPartnerId(partnerId)
+        if (existing != null) {
+            return ApiResponse.Success(existing.id)
+        }
+
+        // 2. Thử refresh từ backend (có thể đã tồn tại nhưng chưa cache)
+        refreshConversations()
+        val afterRefresh = chatDao.getDirectConversationByPartnerId(partnerId)
+        if (afterRefresh != null) {
+            return ApiResponse.Success(afterRefresh.id)
+        }
+
+        // 3. Tạo conversation mới
+        val res = safeApiCall {
+            api.createConversation(
+                CreateConversationRequest(memberIds = listOf(partnerId), type = "DIRECT")
+            )
+        }
+        return when (res) {
+            is ApiResponse.Success -> {
+                val conv = res.data
+                chatDao.insertConversation(ConversationEntity.fromConversationResponse(conv, gson))
+                ApiResponse.Success(conv.id)
+            }
+            is ApiResponse.Error -> ApiResponse.Error(res.code, res.message)
+            is ApiResponse.Exception -> ApiResponse.Exception(res.exception)
+        }
     }
 }

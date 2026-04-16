@@ -387,7 +387,9 @@ fun ProfilePostHeaders(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { onProfileClick(userId) }
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onProfileClick(userId) }
         ) {
             // Avatar
             AsyncImage(
@@ -401,7 +403,7 @@ fun ProfilePostHeaders(
                 error = ColorPainter(Color.LightGray)
             )
             // User Info
-            Column(modifier = Modifier.padding(horizontal = 12.dp).weight(1f)) {
+            Column(modifier = Modifier.padding(horizontal = 12.dp)) {
                 Text(
                     text = username,
                     style = MaterialTheme.typography.titleMedium,

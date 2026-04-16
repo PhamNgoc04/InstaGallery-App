@@ -6,7 +6,7 @@ import com.codewithngoc.instagallery.data.local.dao.ChatDao
 import com.codewithngoc.instagallery.data.local.entity.ChatMessageEntity
 import com.codewithngoc.instagallery.data.local.entity.ConversationEntity
 
-@Database(entities = [ConversationEntity::class, ChatMessageEntity::class], version = 2, exportSchema = false)
+@Database(entities = [ConversationEntity::class, ChatMessageEntity::class], version = 3, exportSchema = false)
 abstract class InstaGalleryDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
 }

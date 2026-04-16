@@ -87,6 +87,8 @@ class ChatDetailViewModel @Inject constructor(
     }
 
     private fun connectWebSocket() {
+        // ✅ FIX #10: Không kết nối WebSocket nếu chưa có conversationId hợp lệ
+        if (conversationId == 0L) return
         val token = session.getToken()
         if (!token.isNullOrEmpty()) {
             chatSocketService.connect(token)
