@@ -23,12 +23,15 @@ import com.codewithngoc.instagallery.ui.features.auth.AuthScreen
 import com.codewithngoc.instagallery.ui.features.auth.forgotpassword.ForgotPasswordScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInScreen
 import com.codewithngoc.instagallery.ui.features.auth.login.SignInViewModel
+import com.codewithngoc.instagallery.ui.features.auth.resetpassword.ResetPasswordScreen
 import com.codewithngoc.instagallery.ui.features.auth.signup.SignUpScreen
 import com.codewithngoc.instagallery.ui.features.booking.BookingListScreen
 import com.codewithngoc.instagallery.ui.features.booking.CreateBookingScreen
 import com.codewithngoc.instagallery.ui.features.booking.PhotographerListScreen
 import com.codewithngoc.instagallery.ui.features.booking.RatingScreen
+import com.codewithngoc.instagallery.ui.features.booking.detail.BookingDetailScreen
 import com.codewithngoc.instagallery.ui.features.explore.ExploreScreen
+import com.codewithngoc.instagallery.ui.features.explore.tags.TagPostsScreen
 import com.codewithngoc.instagallery.ui.features.followers.FollowersScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.HomeFeedScreen
 import com.codewithngoc.instagallery.ui.features.homefeed.detailspost.PostDetailScreen
@@ -49,6 +52,9 @@ import com.codewithngoc.instagallery.ui.features.profile.settings.privacypolicy.
 import com.codewithngoc.instagallery.ui.features.profile.settings.contact.ContactScreen
 import com.codewithngoc.instagallery.ui.features.profile.settings.about.AboutScreen
 import com.codewithngoc.instagallery.ui.features.search.SearchScreen
+import com.codewithngoc.instagallery.ui.features.suggestions.SuggestionsScreen
+import com.codewithngoc.instagallery.ui.features.profile.portfolio.PortfolioScreen
+import com.codewithngoc.instagallery.ui.features.profile.album.AlbumListScreen
 import com.codewithngoc.instagallery.ui.features.userprofile.UserProfileScreen
 import com.codewithngoc.instagallery.ui.splash.SplashScreen
 
@@ -58,14 +64,23 @@ sealed class Screen(val route: String) {
     object SignUp : Screen("signup")
     object Logout : Screen("logout")
     object ForgotPassword : Screen("forgot_password")
+    object ResetPassword : Screen("reset_password")
 
     //================
     object HomeFeed : Screen("homefeed")
     object Explore : Screen("explore")
     object Search : Screen("search")
+    object TagPosts : Screen("tag_posts/{tagName}") {
+        fun createRoute(tagName: String) = "tag_posts/$tagName"
+    }
+    object Suggestions : Screen("suggestions")
     object News : Screen("news")
     object NewPost : Screen("new_post")
     object Profile : Screen("profile")
+    object Portfolio : Screen("portfolio/{userId}") {
+        fun createRoute(userId: Long) = "portfolio/$userId"
+    }
+    object AlbumList : Screen("album_list")
     object Notifications : Screen("notifications")
 
     //==========
@@ -115,6 +130,9 @@ sealed class Screen(val route: String) {
     object Rating : Screen("rating/{bookingId}") {
         fun createRoute(bookingId: Long) = "rating/$bookingId"
     }
+    object BookingDetail : Screen("booking_detail/{bookingId}") {
+        fun createRoute(bookingId: Long) = "booking_detail/$bookingId"
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -155,6 +173,10 @@ fun AppNavigation(
             ForgotPasswordScreen(navController = navController)
         }
 
+        composable(Screen.ResetPassword.route) {
+            ResetPasswordScreen(navController = navController)
+        }
+
         navigation(
             route = "main_graph",
             startDestination = Screen.HomeFeed.route
@@ -169,6 +191,18 @@ fun AppNavigation(
 
             composable(Screen.Search.route) {
                 SearchScreen(navController = navController)
+            }
+            
+            composable(
+                route = Screen.TagPosts.route,
+                arguments = listOf(navArgument("tagName") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val tagName = backStackEntry.arguments?.getString("tagName") ?: ""
+                TagPostsScreen(tagName = tagName, navController = navController)
+            }
+
+            composable(Screen.Suggestions.route) {
+                SuggestionsScreen(navController = navController)
             }
 
             composable(Screen.News.route) {
@@ -214,6 +248,21 @@ fun AppNavigation(
                         Text("User not logged in")
                     }
                 }
+            }
+
+            composable(
+                route = Screen.Portfolio.route,
+                arguments = listOf(navArgument("userId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                // Note: PortfolioScreen hiện tại lấy userId từ savedStateHandle trong ViewModel tự động (khi đăng ký trong backStackEntry)
+                // Tuy nhiên, để tương thích với NavController arg truyền vào hiltViewModel, arg "userId" phải khớp với tên trong SavedStateHandle
+                // Đổi thành "photographerId" cho khớp với ViewModel:
+                val userId = backStackEntry.arguments?.getLong("userId") ?: 0L 
+                PortfolioScreen(navController = navController)
+            }
+
+            composable(Screen.AlbumList.route) {
+                AlbumListScreen(navController = navController)
             }
 
             // Edit Post from Profile
@@ -305,6 +354,14 @@ fun AppNavigation(
 
             composable(Screen.BookingList.route) {
                 BookingListScreen(navController = navController)
+            }
+
+            composable(
+                route = Screen.BookingDetail.route,
+                arguments = listOf(navArgument("bookingId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val bookingId = backStackEntry.arguments?.getLong("bookingId") ?: 0L
+                BookingDetailScreen(bookingId = bookingId, navController = navController)
             }
 
             composable(

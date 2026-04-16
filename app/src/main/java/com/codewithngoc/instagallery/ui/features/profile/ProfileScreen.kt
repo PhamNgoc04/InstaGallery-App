@@ -123,7 +123,7 @@ fun ProfileScreen(
             is ProfileUiState.Error -> {
                 val message = (state as ProfileUiState.Error).message
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "❌ $message")
+                    Text(text = "❌ $message", style = MaterialTheme.typography.bodyLarge)
                 }
             }
 
@@ -227,7 +227,7 @@ fun ProfileScreen(
 @Composable
 fun ProfileTopBar(navController: NavController) {
     CenterAlignedTopAppBar(
-        title = { Text("Hồ sơ", fontWeight = FontWeight.Bold) },
+        title = { Text("Hồ sơ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
         actions = {
             IconButton(
                 onClick = {
@@ -294,9 +294,9 @@ fun ProfileHeader(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(user.fullName, fontWeight = FontWeight.Bold)
-        Text("@${user.username}", color = Color.Gray)
-        user.bio?.let { Text(it) }
+        Text(user.fullName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("@${user.username}", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        user.bio?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
     }
 }
 
@@ -342,9 +342,9 @@ fun ProfilePostItem(
                 contentDescription = "Post image",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .aspectRatio(1f) // Giúp tự động scale mượt vuông thay vì hardcode .height(300.dp)
                     .clickable { onPostClick(post.postId) }, // Chỉ click vào ảnh mới mở trang chi tiết
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Crop // Crop ảnh vuông
             )
         }
         PostActions(
@@ -357,8 +357,7 @@ fun ProfilePostItem(
         // --- Caption ---
         Text(
             text = post.caption ?: "",
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
+            style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -402,17 +401,17 @@ fun ProfilePostHeaders(
                 error = ColorPainter(Color.LightGray)
             )
             // User Info
-            Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 12.dp).weight(1f)) {
                 Text(
                     text = username,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
                     color = Color.Black
                 )
                 Text(
                     text = formatTimeAgo(postCreatedAt ?: ""),
                     color = Color.Gray,
-                    fontSize = 12.sp
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
         }
@@ -451,8 +450,8 @@ fun ProfilePostHeaders(
 @Composable
 fun StateItem(count: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(count, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Text(label, color = Color.Gray, fontSize = 14.sp)
+        Text(count, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
     }
 }
 
@@ -480,7 +479,7 @@ fun StoryHighlights(stories: List<StoryHighlight>, modifier: Modifier = Modifier
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(story.label, fontSize = 12.sp)
+                Text(story.label, style = MaterialTheme.typography.labelSmall)
             }
         }
     }

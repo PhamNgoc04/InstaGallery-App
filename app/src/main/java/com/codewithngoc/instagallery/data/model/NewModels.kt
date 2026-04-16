@@ -30,15 +30,25 @@ data class UnreadCountResponse(
 )
 
 // ==================== CONVERSATIONS ====================
+
+/** Wrapper khớp với shape JSON: { "data": { "conversations": [...] } } */
+data class ConversationsData(
+    val conversations: List<ConversationResponse> = emptyList()
+)
+
 data class ConversationResponse(
     val id: Long = 0,
     val title: String? = null,
-    val type: String = "DIRECT", // DIRECT, GROUP
-    val lastMessage: ChatMessageResponse? = null,
-    val unreadCount: Int = 0,
-    val members: List<ConversationMember> = emptyList(),
-    val createdAt: String? = null,
-    val updatedAt: String? = null
+    val type: String = "DIRECT",        // "DIRECT" or "GROUP"
+    // Fields cho DIRECT conversation (backend trả simplified partner info)
+    val partnerId: Long? = null,
+    val partnerName: String? = null,
+    val partnerAvatar: String? = null,
+    // lastMessage là String (preview text), lastMessageTime là ISO string
+    val lastMessage: String? = null,
+    val lastMessageTime: String? = null,
+    // Optional fields (có thể null nếu backend không gửi)
+    val unreadCount: Int = 0
 )
 
 data class ConversationMember(
@@ -50,22 +60,22 @@ data class ConversationMember(
 )
 
 data class ChatMessageResponse(
-    val id: Long = 0,
-    val conversationId: Long = 0,
-    val senderId: Long = 0,
-    val senderUsername: String? = null,
-    val senderAvatar: String? = null,
-    val content: String? = null,
-    val messageType: String = "TEXT", // TEXT, IMAGE, VIDEO, FILE, SYSTEM
-    val mediaUrl: String? = null,
-    val replyToId: Long? = null,
-    val isDeleted: Boolean = false,
-    val createdAt: String? = null
+    @com.google.gson.annotations.SerializedName(value = "id", alternate = ["messageId"]) val id: Long = 0,
+    @com.google.gson.annotations.SerializedName("conversationId") val conversationId: Long = 0,
+    @com.google.gson.annotations.SerializedName("senderId") val senderId: Long = 0,
+    @com.google.gson.annotations.SerializedName("senderUsername") val senderUsername: String? = null,
+    @com.google.gson.annotations.SerializedName("senderAvatar") val senderAvatar: String? = null,
+    @com.google.gson.annotations.SerializedName("content") val content: String? = null,
+    @com.google.gson.annotations.SerializedName(value = "messageType", alternate = ["type"]) val messageType: String = "TEXT",
+    @com.google.gson.annotations.SerializedName("mediaUrl") val mediaUrl: String? = null,
+    @com.google.gson.annotations.SerializedName("replyToId") val replyToId: Long? = null,
+    @com.google.gson.annotations.SerializedName("isDeleted") val isDeleted: Boolean = false,
+    @com.google.gson.annotations.SerializedName("createdAt") val createdAt: String? = null
 )
 
 data class PaginatedMessagesResponse(
-    val messages: List<ChatMessageResponse> = emptyList(),
-    val meta: PaginationMeta = PaginationMeta()
+    @com.google.gson.annotations.SerializedName("messages") val messages: List<ChatMessageResponse> = emptyList(),
+    @com.google.gson.annotations.SerializedName("meta") val meta: PaginationMeta = PaginationMeta()
 )
 
 data class SendMessageRequest(
@@ -165,7 +175,7 @@ data class SearchResponse(
 )
 
 data class SearchUserResult(
-    val id: Long = 0,
+    @com.google.gson.annotations.SerializedName(value = "userId", alternate = ["id", "accountId"]) val id: Long = 0,
     val username: String = "",
     val fullName: String = "",
     val profilePictureUrl: String? = null,
@@ -199,3 +209,76 @@ data class UpdateUserProfileRequest(
     val dateOfBirth: String? = null,
     val location: String? = null
 )
+
+// ==================== PORTFOLIO AVAILABILITY ====================
+
+/**
+ * Một khung giờ rảnh của nhiếp ảnh gia
+ */
+data class AvailabilitySlot(
+    val dayOfWeek: String = "", // "MONDAY", "TUESDAY", ...
+    val startTime: String = "", // "08:00"
+    val endTime: String = ""    // "17:00"
+)
+
+/**
+ * Request cập nhật lịch rảnh
+ */
+data class PortfolioAvailabilityRequest(
+    val slots: List<AvailabilitySlot>
+)
+
+/**
+ * Response lịch rảnh của nhiếp ảnh gia
+ */
+data class PortfolioAvailabilityResponse(
+    val userId: Long = 0,
+    val slots: List<AvailabilitySlot> = emptyList(),
+    val updatedAt: String? = null
+)
+
+/**
+ * Request cập nhật thông tin Portfolio
+ */
+data class UpdatePortfolioRequest(
+    val bio: String? = null,
+    val specialties: List<String>? = null,
+    val hourlyRate: Double? = null,
+    val currency: String? = null,
+    val serviceArea: String? = null,
+    val isAvailable: Boolean? = null
+)
+
+// ==================== PHOTOGRAPHER RATINGS (LIST) ====================
+
+/**
+ * Response danh sách đánh giá của một Nhiếp Ảnh Gia
+ */
+data class PhotographerRatingsResponse(
+    val photographerId: Long = 0,
+    val averageRating: Double = 0.0,
+    val totalReviews: Int = 0,
+    val ratings: List<RatingResponse> = emptyList()
+)
+
+// ==================== EXPLORE ====================
+
+/**
+ * Response bài viết khám phá (Explore feed)
+ */
+data class ExploreResponse(
+    val posts: List<FeedPostResponse> = emptyList(),
+    val meta: PaginationMeta = PaginationMeta()
+)
+
+// ==================== SEARCH HISTORY ====================
+
+/**
+ * Một từ khoá đã tìm kiếm - khớp với SearchHistoryDto
+ */
+data class SearchHistoryItem(
+    val id: Long = 0,
+    val query: String = "",
+    val searchedAt: String? = null
+)
+

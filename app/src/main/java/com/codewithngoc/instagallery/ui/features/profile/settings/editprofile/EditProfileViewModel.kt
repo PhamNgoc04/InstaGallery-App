@@ -94,4 +94,22 @@ class EditProfileViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateAvatar(imageFile: java.io.File) {
+        viewModelScope.launch {
+            _uiState.value = EditProfileState.Loading
+            when (val response = repository.updateAvatar(imageFile)) {
+                is ApiResponse.Success -> {
+                    avatarUrl.value = response.data.profilePictureUrl
+                    _uiState.value = EditProfileState.UpdateSuccess("Cập nhật ảnh đại diện thành công")
+                }
+                is ApiResponse.Error -> {
+                    _uiState.value = EditProfileState.Error(response.message)
+                }
+                else -> {
+                    _uiState.value = EditProfileState.Error("Lỗi mạng khi tải ảnh lên")
+                }
+            }
+        }
+    }
 }

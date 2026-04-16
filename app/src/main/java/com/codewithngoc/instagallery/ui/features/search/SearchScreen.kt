@@ -19,14 +19,33 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(navController: NavController) {
+fun SearchScreen(
+    navController: NavController,
+    viewModel: SearchViewModel = hiltViewModel()
+) {
     var query by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Users, 1: Posts, 2: Tags
+
+    val searchResults by viewModel.searchResults.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    // Tự động gọi API khi query thay đổi
+    LaunchedEffect(query, selectedTab) {
+        val type = when(selectedTab) {
+            0 -> "users"
+            1 -> "posts"
+            2 -> "tags"
+            else -> null
+        }
+        viewModel.search(query, type)
+    }
 
     Scaffold(
         topBar = {
@@ -78,72 +97,67 @@ fun SearchScreen(navController: NavController) {
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = {
-                        Text(
-                            "Người dùng",
-                            fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == 0) Color(0xFFFF6B35) else Color.Gray
-                        )
-                    }
+                    text = { Text("Người dùng", style = MaterialTheme.typography.titleMedium, fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal, color = if (selectedTab == 0) Color(0xFFFF6B35) else Color.Gray) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = {
-                        Text(
-                            "Bài đăng",
-                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == 1) Color(0xFFFF6B35) else Color.Gray
-                        )
-                    }
+                    text = { Text("Bài đăng", style = MaterialTheme.typography.titleMedium, fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal, color = if (selectedTab == 1) Color(0xFFFF6B35) else Color.Gray) }
                 )
                 Tab(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    text = {
-                        Text(
-                            "Tags",
-                            fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == 2) Color(0xFFFF6B35) else Color.Gray
-                        )
-                    }
+                    text = { Text("Tags", style = MaterialTheme.typography.titleMedium, fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal, color = if (selectedTab == 2) Color(0xFFFF6B35) else Color.Gray) }
                 )
             }
 
-            // Results
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                when (selectedTab) {
-                    0 -> {
-                        items(5) { index ->
-                            SearchUserItem(
-                                username = "user_${index + 1}",
-                                subtitle = "Photography Studio",
-                                onFollowClick = { },
-                                onUserClick = { navController.navigate("user_profile/${index + 1}") }
-                            )
-                        }
-                    }
-                    1 -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Nhập từ khóa để tìm bài đăng", color = Color.Gray)
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFFF6B35))
+                }
+            } else if (error != null) {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text(error ?: "", color = Color.Red)
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    when (selectedTab) {
+                        0 -> {
+                            val users = searchResults?.users ?: emptyList()
+                            if (users.isEmpty() && query.isNotEmpty()) {
+                                item { Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text("Không tìm thấy người dùng nào", color = Color.Gray) } }
+                            }
+                            items(users) { user ->
+                                SearchUserItem(
+                                    username = user.username,
+                                    subtitle = user.fullName,
+                                    avatarUrl = user.profilePictureUrl,
+                                    onFollowClick = {  },
+                                    onUserClick = { navController.navigate("user_profile/${user.id}") }
+                                )
                             }
                         }
-                    }
-                    2 -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Nhập tag để tìm kiếm", color = Color.Gray)
+                        1 -> {
+                            val posts = searchResults?.posts ?: emptyList()
+                            if (posts.isEmpty() && query.isNotEmpty()) {
+                                item { Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text("Không tìm thấy bài viết nào", color = Color.Gray) } }
+                            }
+                            items(posts) { post ->
+                                // Post UI Mock, we can expand later
+                                Text("Khớp với bài đăng ID: ${post.postId}", modifier = Modifier.padding(16.dp))
+                                HorizontalDivider()
+                            }
+                        }
+                        2 -> {
+                            val tags = searchResults?.tags ?: emptyList()
+                            if (tags.isEmpty() && query.isNotEmpty()) {
+                                item { Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text("Không tìm thấy tag nào", color = Color.Gray) } }
+                            }
+                            items(tags) { tag ->
+                                Text("#${tag.name} - ${tag.usageCount} bài viết", modifier = Modifier.padding(16.dp).clickable { 
+                                    navController.navigate("tag_posts/${tag.name}")
+                                })
+                                HorizontalDivider()
                             }
                         }
                     }
@@ -157,6 +171,7 @@ fun SearchScreen(navController: NavController) {
 private fun SearchUserItem(
     username: String,
     subtitle: String,
+    avatarUrl: String?,
     onFollowClick: () -> Unit,
     onUserClick: () -> Unit
 ) {
@@ -168,7 +183,7 @@ private fun SearchUserItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = null,
+            model = avatarUrl,
             contentDescription = "Avatar",
             modifier = Modifier
                 .size(48.dp)
@@ -179,8 +194,8 @@ private fun SearchUserItem(
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text("@$username", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text(subtitle, color = Color.Gray, fontSize = 13.sp)
+            Text("@$username", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
         }
         Button(
             onClick = onFollowClick,
@@ -188,8 +203,9 @@ private fun SearchUserItem(
             modifier = Modifier.height(34.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B35))
         ) {
-            Text("Follow", fontSize = 12.sp)
+            Text("Follow", style = MaterialTheme.typography.labelMedium, color = Color.White)
         }
     }
     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
 }
+

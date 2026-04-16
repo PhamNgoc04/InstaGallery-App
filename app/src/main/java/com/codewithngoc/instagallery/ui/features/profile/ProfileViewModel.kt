@@ -34,22 +34,23 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = ProfileUiState.Loading
 
-            // Gọi song song 3 API: user profile, followers count, following count
+            // Gọi song song: user profile, followers count, following count, và bài viết của user
             val userDeferred = async { repository.getUserProfile(userId) }
             val followersDeferred = async { repository.getFollowers(userId) }
             val followingDeferred = async { repository.getFollowing(userId) }
-            // Lấy posts từ feed (filter theo userId)
-            val postsDeferred = async { postRepository.getFeed(page = 1, limit = 50) }
+            // Thử getUserPosts trước; nếu thất bại fallback sang getFeed+filter
+            val postsDeferred = async { postRepository.getUserPosts(userId) }
+            val feedDeferred = async { postRepository.getFeed(page = 1, limit = 50) }
 
             val userResult = userDeferred.await()
             val followersResult = followersDeferred.await()
             val followingResult = followingDeferred.await()
             val postsResult = postsDeferred.await()
+            val feedResult = feedDeferred.await()
 
             if (userResult is ApiResponse.Success) {
                 val userProfile = userResult.data
 
-                // Lấy follower/following counts từ pagination meta
                 val followerCount = if (followersResult is ApiResponse.Success) {
                     followersResult.data.meta.totalRecords
                 } else 0
@@ -58,10 +59,14 @@ class ProfileViewModel @Inject constructor(
                     followingResult.data.meta.totalRecords
                 } else 0
 
-                // Lấy posts của user hiện tại từ feed
-                val myPosts = if (postsResult is ApiResponse.Success) {
-                    postsResult.data.posts.filter { it.userId == userId }
-                } else emptyList()
+                // Ưu tiên getUserPosts; nếu thất bại hoặc rỗng thì lấy từ feed + filter
+                val myPosts = when {
+                    postsResult is ApiResponse.Success && postsResult.data.isNotEmpty() ->
+                        postsResult.data
+                    feedResult is ApiResponse.Success ->
+                        feedResult.data.posts.filter { it.userId == userId }
+                    else -> emptyList()
+                }
 
                 _uiState.value = ProfileUiState.Success(
                     user = userProfile.toUiUser(

@@ -28,6 +28,7 @@ fun SettingsScreen(navController: NavController) {
                     Text(
                         "Cài đặt",
                         modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -70,6 +71,7 @@ fun SettingsScreen(navController: NavController) {
 fun SettingsSectionHeader(title: String) {
     Text(
         text = title,
+        style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         color = Color.Black,
         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
@@ -96,7 +98,7 @@ fun SettingsItem(title: String, isLastItem: Boolean = false, onClick: () -> Unit
         ) {
             Text(
                 text = title,
-                fontSize = 17.sp,
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Icon(
