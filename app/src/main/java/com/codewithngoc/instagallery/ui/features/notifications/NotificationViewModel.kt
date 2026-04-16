@@ -1,15 +1,16 @@
 package com.codewithngoc.instagallery.ui.features.notifications
 
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codewithngoc.instagallery.data.model.NotificationResponse
 import com.codewithngoc.instagallery.data.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -26,15 +27,15 @@ data class NotificationUiState(
 
 data class NotificationUI(
     val id: Long,
-    val userId: Long, // to navigate if type is FOLLOW
+    val userId: Long,
     val username: String,
     val avatarUrl: String?,
-    val type: String, // mapped type: LIKE, COMMENT, FOLLOW, BOOKING
+    val type: String,
     val rawType: String,
     val message: String,
     val timeAgo: String,
     val isRead: Boolean,
-    val targetId: Long? // to navigate to POST or BOOKING
+    val targetId: Long?
 )
 
 @HiltViewModel
@@ -45,86 +46,105 @@ class NotificationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(NotificationUiState())
     val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
 
+    // Badge count cho bottom bar
+    private val _unreadCount = MutableStateFlow(0)
+    val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
+
     init {
         fetchNotifications()
+        startUnreadCountPolling()
+    }
+
+    /** Poll unread count mỗi 60 giây trong background */
+    private fun startUnreadCountPolling() {
+        viewModelScope.launch {
+            while (isActive) {
+                fetchUnreadCount()
+                delay(60_000L)
+            }
+        }
+    }
+
+    private suspend fun fetchUnreadCount() {
+        repository.getUnreadNotificationCount().onSuccess { count ->
+            _unreadCount.value = count
+        }
     }
 
     fun fetchNotifications() {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            val result = repository.getNotifications(page = 1, limit = 50)
-            result.onSuccess { response ->
-                val mappedNotifications = response.notifications.map { mapToUI(it) }
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    notifications = mappedNotifications
-                )
-            }.onFailure { exception ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = exception.message ?: "Unknown error occurred"
-                )
-            }
+            repository.getNotifications(page = 1, limit = 50)
+                .onSuccess { response ->
+                    val mapped = response.notifications.map { mapToUI(it) }
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        notifications = mapped
+                    )
+                    _unreadCount.value = mapped.count { !it.isRead }
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "Đã xảy ra lỗi"
+                    )
+                }
         }
     }
 
     fun refreshNotifications() {
         _uiState.value = _uiState.value.copy(isRefreshing = true, error = null)
         viewModelScope.launch {
-            val result = repository.getNotifications(page = 1, limit = 50)
-            result.onSuccess { response ->
-                val mappedNotifications = response.notifications.map { mapToUI(it) }
-                _uiState.value = _uiState.value.copy(
-                    isRefreshing = false,
-                    notifications = mappedNotifications
-                )
-            }.onFailure { exception ->
-                _uiState.value = _uiState.value.copy(
-                    isRefreshing = false,
-                    error = exception.message ?: "Unknown error occurred"
-                )
-            }
+            repository.getNotifications(page = 1, limit = 50)
+                .onSuccess { response ->
+                    val mapped = response.notifications.map { mapToUI(it) }
+                    _uiState.value = _uiState.value.copy(
+                        isRefreshing = false,
+                        notifications = mapped
+                    )
+                    _unreadCount.value = mapped.count { !it.isRead }
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isRefreshing = false,
+                        error = e.message ?: "Đã xảy ra lỗi"
+                    )
+                }
         }
     }
 
     fun markAsRead(notificationId: Long, isRead: Boolean) {
-        if (isRead) return // Already read
-        
-        // Optimistic UI update
-        val currentNotifications = _uiState.value.notifications.toMutableList()
-        val index = currentNotifications.indexOfFirst { it.id == notificationId }
-        if (index != -1) {
-            currentNotifications[index] = currentNotifications[index].copy(isRead = true)
-            _uiState.value = _uiState.value.copy(notifications = currentNotifications)
+        if (isRead) return
+        val list = _uiState.value.notifications.toMutableList()
+        val idx = list.indexOfFirst { it.id == notificationId }
+        if (idx != -1) {
+            list[idx] = list[idx].copy(isRead = true)
+            _uiState.value = _uiState.value.copy(notifications = list)
+            _unreadCount.value = (_unreadCount.value - 1).coerceAtLeast(0)
         }
-
-        // Call API
         viewModelScope.launch {
             val result = repository.markNotificationRead(notificationId)
             if (result.isFailure) {
-                // Revert if failed
-                val revertedNotifications = _uiState.value.notifications.toMutableList()
-                val revertIndex = revertedNotifications.indexOfFirst { it.id == notificationId }
-                if (revertIndex != -1) {
-                    revertedNotifications[revertIndex] = revertedNotifications[revertIndex].copy(isRead = false)
-                    _uiState.value = _uiState.value.copy(notifications = revertedNotifications)
+                // Revert
+                val r = _uiState.value.notifications.toMutableList()
+                val i = r.indexOfFirst { it.id == notificationId }
+                if (i != -1) {
+                    r[i] = r[i].copy(isRead = false)
+                    _uiState.value = _uiState.value.copy(notifications = r)
+                    _unreadCount.value = _unreadCount.value + 1
                 }
             }
         }
     }
 
     fun markAllAsRead() {
-        // Optimistic update
-        val updatedNotifications = _uiState.value.notifications.map { it.copy(isRead = true) }
-        _uiState.value = _uiState.value.copy(notifications = updatedNotifications)
-
-        viewModelScope.launch {
-            repository.markAllNotificationsRead()
-        }
+        val updated = _uiState.value.notifications.map { it.copy(isRead = true) }
+        _uiState.value = _uiState.value.copy(notifications = updated)
+        _unreadCount.value = 0
+        viewModelScope.launch { repository.markAllNotificationsRead() }
     }
 
     private fun mapToUI(dto: NotificationResponse): NotificationUI {
-        // Handle message and type
         val uiType = when (dto.type) {
             "NEW_LIKE", "LIKE" -> "LIKE"
             "NEW_COMMENT", "COMMENT" -> "COMMENT"
@@ -132,7 +152,6 @@ class NotificationViewModel @Inject constructor(
             "BOOKING_REQUEST", "BOOKING_CONFIRMED", "BOOKING_CANCELLED", "BOOKING" -> "BOOKING"
             else -> "SYSTEM"
         }
-
         val message = dto.body ?: when (uiType) {
             "LIKE" -> "đã thích bài viết của bạn"
             "COMMENT" -> "đã bình luận vào bài viết của bạn"
@@ -140,7 +159,6 @@ class NotificationViewModel @Inject constructor(
             "BOOKING" -> "đã đặt lịch chụp với bạn"
             else -> "có một thông báo mới cho bạn"
         }
-
         return NotificationUI(
             id = dto.id,
             userId = dto.senderId ?: 0,
@@ -161,24 +179,19 @@ class NotificationViewModel @Inject constructor(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val zdt = ZonedDateTime.parse(isoString)
                 val now = ZonedDateTime.now()
-                
+                val minutes = ChronoUnit.MINUTES.between(zdt, now)
+                val hours = ChronoUnit.HOURS.between(zdt, now)
                 val days = ChronoUnit.DAYS.between(zdt, now)
-                
                 when {
-                    days == 0L -> {
-                        // Today, return time like "5:30 PM"
-                        val formatter = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
-                        zdt.format(formatter)
-                    }
-                    days == 1L -> "Yesterday"
-                    else -> {
-                        // Older, return date like "14/12/18"
-                        val formatter = DateTimeFormatter.ofPattern("dd/MM/yy", Locale.ENGLISH)
-                        zdt.format(formatter)
-                    }
+                    minutes < 1 -> "Vừa xong"
+                    minutes < 60 -> "${minutes}p"
+                    hours < 24 -> "${hours}h"
+                    days == 1L -> "Hôm qua"
+                    days < 7 -> "${days} ngày trước"
+                    else -> zdt.format(DateTimeFormatter.ofPattern("dd/MM/yy", Locale.ENGLISH))
                 }
             } else {
-                isoString.take(10) // fallback for older Android
+                isoString.take(10)
             }
         } catch (e: Exception) {
             "Vừa xong"

@@ -294,6 +294,12 @@ interface InstaGalleryApi {
         @Body request: SendMessageRequest
     ): Response<ApiResponseWrapper<ChatMessageResponse>>
 
+    /** Tạo hoặc lấy conversation DIRECT với một user */
+    @POST("api/v1/chat/conversations")
+    suspend fun createConversation(
+        @Body request: CreateConversationRequest
+    ): Response<ApiResponseWrapper<ConversationResponse>>
+
     // ==================== PORTFOLIOS ====================
 
     @GET("api/v1/portfolios")

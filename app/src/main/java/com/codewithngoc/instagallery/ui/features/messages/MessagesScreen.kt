@@ -81,7 +81,12 @@ fun MessagesScreen(
                     items(conversations) { conv ->
                         ConversationRow(
                             conversation = conv,
-                            onClick = { navController.navigate("chat_detail/${conv.id}") }
+                            // ✅ FIX #6: Dùng Screen object thay vì hardcode string
+                            onClick = {
+                                navController.navigate(
+                                    com.codewithngoc.instagallery.ui.navigation.Screen.ChatDetail.createRoute(conv.id)
+                                )
+                            }
                         )
                     }
                 }
