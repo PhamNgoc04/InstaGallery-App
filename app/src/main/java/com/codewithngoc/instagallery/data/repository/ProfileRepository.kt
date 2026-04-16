@@ -2,11 +2,14 @@ package com.codewithngoc.instagallery.data.repository
 
 import com.codewithngoc.instagallery.data.InstaGalleryApi
 import com.codewithngoc.instagallery.data.InstaGallerySession
-import com.codewithngoc.instagallery.data.model.PaginatedFollowsResponse
-import com.codewithngoc.instagallery.data.model.UserProfileResponse
+import com.codewithngoc.instagallery.data.model.*
 import com.codewithngoc.instagallery.data.remote.ApiResponse
 import com.codewithngoc.instagallery.data.remote.safeApiCall
 import com.codewithngoc.instagallery.data.remote.safeAuthApiCall
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 import javax.inject.Inject
 
 class ProfileRepository @Inject constructor(
@@ -14,60 +17,67 @@ class ProfileRepository @Inject constructor(
     private val session: InstaGallerySession
 ) {
 
-    /**
-     * Lấy thông tin user theo ID (public endpoint)
-     */
-    suspend fun getUserProfile(userId: Long): ApiResponse<UserProfileResponse> {
-        val token = session.getToken()
-        return safeAuthApiCall(token) {
-            api.getUserProfile(userId)
-        }
-    }
+    // ── Profile ────────────────────────────────────────────────
 
-    /**
-     * Lấy thông tin user hiện tại
-     */
     suspend fun getCurrentUser(): ApiResponse<UserProfileResponse> {
         val token = session.getToken()
-        return safeAuthApiCall(token) {
-            api.getCurrentUser()
-        }
+        return safeAuthApiCall(token) { api.getCurrentUser() }
     }
 
-    /**
-     * Cập nhật thông tin user hiện tại
-     */
-    suspend fun updateProfile(request: com.codewithngoc.instagallery.data.model.UpdateUserProfileRequest): ApiResponse<UserProfileResponse> {
+    suspend fun getUserProfile(userId: Long): ApiResponse<UserProfileResponse> =
+        safeApiCall { api.getUserProfile(userId) }
+
+    suspend fun updateProfile(request: UpdateUserProfileRequest): ApiResponse<UserProfileResponse> {
         val token = session.getToken()
-        return safeAuthApiCall(token) {
-            api.updateProfile(request)
-        }
+        return safeAuthApiCall(token) { api.updateProfile(request) }
     }
 
     /**
-     * Lấy followers (chỉ cần totalRecords từ meta)
+     * Upload ảnh đại diện — nhận File từ gallery/camera, tự tạo MultipartBody.Part
      */
-    suspend fun getFollowers(userId: Long): ApiResponse<PaginatedFollowsResponse> {
-        return safeApiCall {
-            api.getFollowers(userId, page = 1, limit = 1)
-        }
+    suspend fun updateAvatar(imageFile: File): ApiResponse<UserProfileResponse> {
+        val token = session.getToken()
+        val requestFile = imageFile.asRequestBody("image/*".toMediaTypeOrNull())
+        val part = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
+        return safeAuthApiCall(token) { api.updateAvatar(part) }
     }
 
-    /**
-     * Lấy following (chỉ cần totalRecords từ meta)
-     */
-    suspend fun getFollowing(userId: Long): ApiResponse<PaginatedFollowsResponse> {
-        return safeApiCall {
-            api.getFollowing(userId, page = 1, limit = 1)
-        }
+    suspend fun deactivateAccount(): ApiResponse<Unit> {
+        val token = session.getToken()
+        return safeAuthApiCall(token) { api.deactivateAccount() }
     }
 
-    /**
-     * Toggle follow/unfollow user
-     */
-    suspend fun toggleFollow(userId: Long): ApiResponse<Map<String, Boolean>> {
-        return safeApiCall {
-            api.toggleFollow(userId)
-        }
+    // ── Sessions ───────────────────────────────────────────────
+
+    suspend fun getSessions(): ApiResponse<List<SessionResponse>> {
+        val token = session.getToken()
+        return safeAuthApiCall(token) { api.getSessions() }
     }
+
+    suspend fun deleteSession(sessionId: Long): ApiResponse<Unit> {
+        val token = session.getToken()
+        return safeAuthApiCall(token) { api.deleteSession(sessionId) }
+    }
+
+    // ── Follow ─────────────────────────────────────────────────
+
+    suspend fun toggleFollow(userId: Long): ApiResponse<Map<String, Boolean>> =
+        safeApiCall { api.toggleFollow(userId) }
+
+    suspend fun getFollowers(
+        userId: Long,
+        page: Int = 1,
+        limit: Int = 20
+    ): ApiResponse<PaginatedFollowsResponse> =
+        safeApiCall { api.getFollowers(userId, page, limit) }
+
+    suspend fun getFollowing(
+        userId: Long,
+        page: Int = 1,
+        limit: Int = 20
+    ): ApiResponse<PaginatedFollowsResponse> =
+        safeApiCall { api.getFollowing(userId, page, limit) }
+
+    suspend fun getSuggestions(limit: Int = 10): ApiResponse<List<SearchUserResult>> =
+        safeApiCall { api.getSuggestions(limit) }
 }

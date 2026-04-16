@@ -20,33 +20,25 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-
-data class ChatMessage(
-    val id: Int,
-    val content: String,
-    val senderId: Long,
-    val senderName: String,
-    val time: String,
-    val isMe: Boolean
-)
+import com.codewithngoc.instagallery.data.model.ChatMessageResponse
+import com.codewithngoc.instagallery.data.utils.formatTimeAgo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailScreen(
     conversationId: Long,
-    navController: NavController
+    navController: NavController,
+    viewModel: ChatDetailViewModel = hiltViewModel()
 ) {
     var inputText by remember { mutableStateOf("") }
-    val messages = remember {
-        listOf(
-            ChatMessage(1, "Chào bạn, mình muốn đặt lịch chụp ảnh gia đình 📸", 2, "Alex", "14:30", false),
-            ChatMessage(2, "Chào bạn! Bạn muốn chụp vào ngày nào?", 1, "Me", "14:31", true),
-            ChatMessage(3, "Cuối tuần này được không ạ?", 2, "Alex", "14:33", false),
-            ChatMessage(4, "Được chứ! Thứ 7 lúc 9h sáng nhé 😊", 1, "Me", "14:34", true)
-        )
-    }
+    val messages by viewModel.messages.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val partnerName by viewModel.partnerName.collectAsState()
+    val partnerAvatar by viewModel.partnerAvatar.collectAsState()
+    val currentUserId = viewModel.currentUserId
 
     Scaffold(
         topBar = {
@@ -54,7 +46,7 @@ fun ChatDetailScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         AsyncImage(
-                            model = null,
+                            model = partnerAvatar,
                             contentDescription = "Avatar",
                             modifier = Modifier
                                 .size(36.dp)
@@ -64,7 +56,11 @@ fun ChatDetailScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
-                            Text("Alex Photo", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(
+                                partnerName ?: "...",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
@@ -73,7 +69,7 @@ fun ChatDetailScreen(
                                         .background(Color(0xFF4CAF50))
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("📷 Photographer", fontSize = 12.sp, color = Color.Gray)
+                                Text("Online", fontSize = 12.sp, color = Color.Gray)
                             }
                         }
                     }
@@ -86,10 +82,13 @@ fun ChatDetailScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
+        // ✅ FIX: bottomBar với imePadding để không bị che bởi bàn phím và navigation bar
         bottomBar = {
-            // Input bar
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()  // tránh bị thanh nav bar che
+                    .imePadding(),            // đẩy lên khi bàn phím xuất hiện
                 color = Color.White,
                 shadowElevation = 8.dp
             ) {
@@ -98,12 +97,10 @@ fun ChatDetailScreen(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Emoji button
                     IconButton(onClick = { }, modifier = Modifier.size(36.dp)) {
                         Text("😊", fontSize = 20.sp)
                     }
 
-                    // Input field
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
@@ -118,14 +115,17 @@ fun ChatDetailScreen(
                         )
                     )
 
-                    // Camera button
                     IconButton(onClick = { }, modifier = Modifier.size(36.dp)) {
                         Text("📷", fontSize = 18.sp)
                     }
 
-                    // Send button
                     IconButton(
-                        onClick = { inputText = "" },
+                        onClick = {
+                            if (inputText.isNotBlank()) {
+                                viewModel.sendMessage(inputText)
+                                inputText = ""
+                            }
+                        },
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
@@ -143,54 +143,60 @@ fun ChatDetailScreen(
         },
         containerColor = Color(0xFFF5F5F5)
     ) { padding ->
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+        // ✅ Key theo ID tin mới nhất — scroll xuống kể cả khi size không đổi (temp → server msg swap)
+        val lastMessageId = messages.lastOrNull()?.id
+        LaunchedEffect(lastMessageId) {
+            if (messages.isNotEmpty()) {
+                listState.animateScrollToItem(messages.lastIndex)
+            }
+        }
+
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize(),
-            reverseLayout = false,
+            reverseLayout = false, // ASC sort → không cần reverse
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Timestamp header
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("14:30", fontSize = 12.sp, color = Color.Gray)
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFFFF6B35))
+                    }
                 }
-            }
-
-            items(messages) { message ->
-                ChatBubble(message)
+            } else {
+                items(messages) { message ->
+                    val isMe = message.senderId == currentUserId
+                    ChatBubble(message, isMe)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ChatBubble(message: ChatMessage) {
+private fun ChatBubble(message: ChatMessageResponse, isMe: Boolean) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = if (message.isMe) Alignment.End else Alignment.Start
+        horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
     ) {
-        if (!message.isMe) {
-            Text(
-                message.senderName,
-                fontSize = 12.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(start = 12.dp, bottom = 2.dp)
-            )
-        }
-
         Row(
             verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = if (message.isMe) Arrangement.End else Arrangement.Start,
+            horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start,
             modifier = Modifier.fillMaxWidth()
         ) {
-            if (!message.isMe) {
+            if (!isMe) {
                 AsyncImage(
-                    model = null,
+                    model = message.senderAvatar,
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(28.dp)
@@ -205,28 +211,28 @@ private fun ChatBubble(message: ChatMessage) {
                 shape = RoundedCornerShape(
                     topStart = 16.dp,
                     topEnd = 16.dp,
-                    bottomStart = if (message.isMe) 16.dp else 4.dp,
-                    bottomEnd = if (message.isMe) 4.dp else 16.dp
+                    bottomStart = if (isMe) 16.dp else 4.dp,
+                    bottomEnd = if (isMe) 4.dp else 16.dp
                 ),
-                color = if (message.isMe) Color(0xFFFF6B35) else Color.White,
+                color = if (isMe) Color(0xFFFF6B35) else Color.White,
                 shadowElevation = 1.dp
             ) {
                 Text(
-                    message.content,
+                    message.content ?: "",
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    color = if (message.isMe) Color.White else Color.Black,
+                    color = if (isMe) Color.White else Color.Black,
                     fontSize = 15.sp
                 )
             }
         }
 
         Text(
-            message.time,
+            formatTimeAgo(message.createdAt ?: ""),
             fontSize = 11.sp,
             color = Color.Gray,
             modifier = Modifier.padding(
-                start = if (message.isMe) 0.dp else 40.dp,
-                end = if (message.isMe) 4.dp else 0.dp,
+                start = if (isMe) 0.dp else 40.dp,
+                end = if (isMe) 4.dp else 0.dp,
                 top = 2.dp
             )
         )

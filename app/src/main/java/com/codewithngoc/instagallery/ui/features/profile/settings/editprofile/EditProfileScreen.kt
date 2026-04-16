@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,8 +78,23 @@ fun EditProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val imagePickerLauncher = rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+            ) { uri ->
+                if (uri != null) {
+                    val file = com.codewithngoc.instagallery.utils.ImagePickerUtils.uriToFile(context, uri)
+                    if (file != null) {
+                        viewModel.updateAvatar(file)
+                    }
+                }
+            }
+
             // Avatar with camera icon
-            Box(contentAlignment = Alignment.BottomEnd) {
+            Box(
+                contentAlignment = Alignment.BottomEnd,
+                modifier = Modifier.clickable { imagePickerLauncher.launch("image/*") }
+            ) {
                 AsyncImage(
                     model = avatarUrl,
                     contentDescription = "Avatar",

@@ -21,31 +21,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-
-data class ConversationPreview(
-    val id: Long,
-    val name: String,
-    val lastMessage: String,
-    val time: String,
-    val hasUnread: Boolean = false,
-    val avatar: String? = null
-)
+import com.codewithngoc.instagallery.data.model.ConversationResponse
+import com.codewithngoc.instagallery.data.utils.formatTimeAgo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MessagesScreen(navController: NavController) {
-    val conversations = remember {
-        listOf(
-            ConversationPreview(1, "Apollo Phelps", "Live, Love, Bark", "5:30 PM"),
-            ConversationPreview(2, "Bailey Stein", "Dog kisses fix everything", "4:32 PM"),
-            ConversationPreview(3, "Bandit Brown", "You can't buy love but...", "3:55 PM", true),
-            ConversationPreview(4, "Benji Gordon", "I love it", "Hôm qua"),
-            ConversationPreview(5, "Hank Lozano", "Adorable", "Hôm qua"),
-            ConversationPreview(6, "Tommy Jackson", "Lorem ipsum dolor", "5:30 PM")
-        )
-    }
+fun MessagesScreen(
+    navController: NavController,
+    viewModel: ChatListViewModel = hiltViewModel()
+) {
+    val conversations by viewModel.conversations.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Scaffold(
         topBar = {
@@ -74,12 +64,26 @@ fun MessagesScreen(navController: NavController) {
                 fontWeight = FontWeight.Bold
             )
 
-            LazyColumn {
-                items(conversations) { conv ->
-                    ConversationRow(
-                        conversation = conv,
-                        onClick = { navController.navigate("chat_detail/${conv.id}") }
-                    )
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFFF6B35))
+                }
+            } else if (error != null) {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text(error ?: "", color = Color.Red)
+                }
+            } else if (conversations.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Chưa có tin nhắn nào", color = Color.Gray)
+                }
+            } else {
+                LazyColumn {
+                    items(conversations) { conv ->
+                        ConversationRow(
+                            conversation = conv,
+                            onClick = { navController.navigate("chat_detail/${conv.id}") }
+                        )
+                    }
                 }
             }
         }
@@ -87,7 +91,7 @@ fun MessagesScreen(navController: NavController) {
 }
 
 @Composable
-private fun ConversationRow(conversation: ConversationPreview, onClick: () -> Unit) {
+private fun ConversationRow(conversation: ConversationResponse, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -95,9 +99,8 @@ private fun ConversationRow(conversation: ConversationPreview, onClick: () -> Un
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar
         AsyncImage(
-            model = conversation.avatar,
+            model = conversation.partnerAvatar,
             contentDescription = "Avatar",
             modifier = Modifier
                 .size(52.dp)
@@ -109,15 +112,14 @@ private fun ConversationRow(conversation: ConversationPreview, onClick: () -> Un
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Content
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                conversation.name,
+                conversation.partnerName ?: conversation.title ?: "Unknown",
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
             Text(
-                conversation.lastMessage,
+                conversation.lastMessage ?: "",
                 color = Color.Gray,
                 fontSize = 14.sp,
                 maxLines = 1,
@@ -125,10 +127,13 @@ private fun ConversationRow(conversation: ConversationPreview, onClick: () -> Un
             )
         }
 
-        // Time and unread
         Column(horizontalAlignment = Alignment.End) {
-            Text(conversation.time, fontSize = 12.sp, color = Color.Gray)
-            if (conversation.hasUnread) {
+            Text(
+                formatTimeAgo(conversation.lastMessageTime ?: ""),
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+            if (conversation.unreadCount > 0) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Box(
                     modifier = Modifier

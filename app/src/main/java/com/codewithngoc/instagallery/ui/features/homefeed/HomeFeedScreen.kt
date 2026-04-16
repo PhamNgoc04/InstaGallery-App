@@ -145,7 +145,7 @@ fun HomeFeedScreen(
                         modifier = Modifier.align(Alignment.Center).padding(16.dp),
                         color = Color.Gray,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        fontSize = 16.sp
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
                 else -> {
@@ -265,10 +265,10 @@ fun PostItem(
                 contentDescription = "Post Image",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .aspectRatio(1f) // Responsive size thay vì height(300.dp)
 //                    .clip(RoundedCornerShape(12.dp)) // optional cho đẹp
                     .clickable { onPostClick(post.postId) },
-                contentScale = ContentScale.Fit, // Fit nhìn dễ lỗi layout, Crop thường đẹp hơn
+                contentScale = ContentScale.Crop, // Crop thường đẹp hơn và tránh lỗi UI do khoảng trống
                 placeholder = painterResource(R.drawable.placeholder_post),
                 error = painterResource(R.drawable.ic_error) // ✅ thay bằng 1 vector drawable
             )
@@ -283,8 +283,7 @@ fun PostItem(
         // --- Caption ---
         Text(
             text = post.caption ?: "",
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
+            style = MaterialTheme.typography.bodyMedium,
             maxLines = if (isDetail) Int.MAX_VALUE else 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -331,14 +330,14 @@ fun PostHeader(
             Column(modifier = Modifier.padding(horizontal = 12.dp)) {
                 Text(
                     text = username,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
                     color = Color.Black
                 )
                 Text(
                     text = formatTimeAgo(postCreatedAt ?: ""),
                     color = Color.Gray,
-                    fontSize = 12.sp
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
         }
@@ -450,8 +449,7 @@ fun HomeInsTopBar(navController: NavController? = null) {
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "InstaGallery",
-                style = TextStyle(
-                    fontSize = 20.sp,
+                style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = colorResource(id = R.color.orange_button_login)
                 )

@@ -100,7 +100,10 @@ dependencies {
 
     implementation("com.google.accompanist:accompanist-permissions:0.34.0") // hoặc phiên bản mới hơn
 
-
+    // Room Database
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    kapt(libs.room.compiler)
 }
 
 kapt {
