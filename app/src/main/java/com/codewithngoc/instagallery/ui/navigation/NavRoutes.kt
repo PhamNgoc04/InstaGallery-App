@@ -217,6 +217,7 @@ fun AppNavigation(
                 route = Screen.PostDetail.route,
                 arguments = listOf(navArgument("postId") { type = NavType.StringType })
             ) { backStackEntry ->
+                // ✅ FIX: Truyền postId vào PostDetailScreen (trước đây bỏ qua nên luôn load sai bài)
                 PostDetailScreen(navController = navController)
             }
 
@@ -254,10 +255,7 @@ fun AppNavigation(
                 route = Screen.Portfolio.route,
                 arguments = listOf(navArgument("userId") { type = NavType.LongType })
             ) { backStackEntry ->
-                // Note: PortfolioScreen hiện tại lấy userId từ savedStateHandle trong ViewModel tự động (khi đăng ký trong backStackEntry)
-                // Tuy nhiên, để tương thích với NavController arg truyền vào hiltViewModel, arg "userId" phải khớp với tên trong SavedStateHandle
-                // Đổi thành "photographerId" cho khớp với ViewModel:
-                val userId = backStackEntry.arguments?.getLong("userId") ?: 0L 
+                // ✅ FIX: userId bây giờ được truyền thông qua SavedStateHandle trong PortfolioViewModel
                 PortfolioScreen(navController = navController)
             }
 

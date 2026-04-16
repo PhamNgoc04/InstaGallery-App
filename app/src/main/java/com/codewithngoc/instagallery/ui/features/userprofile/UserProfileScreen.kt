@@ -161,11 +161,11 @@ fun UserProfileScreen(
                             ) {
                                 StatItem("${posts.size}", "Posts")
                                 Text(" | ", color = Color.LightGray)
-                                StatItem("0", "Followers", onClick = {
+                                StatItem("${state.followerCount}", "Followers", onClick = {
                                     navController.navigate("followers/$userId")
                                 })
                                 Text(" | ", color = Color.LightGray)
-                                StatItem("0", "Following", onClick = {
+                                StatItem("${state.followingCount}", "Following", onClick = {
                                     navController.navigate("followers/$userId")
                                 })
                             }
@@ -201,7 +201,11 @@ fun UserProfileScreen(
 
                                 OutlinedButton(
                                     onClick = {
-                                        navController.navigate("chat_detail/$userId")
+                                        viewModel.getOrCreateConversation { conversationId ->
+                                            navController.navigate(
+                                                com.codewithngoc.instagallery.ui.navigation.Screen.ChatDetail.createRoute(conversationId)
+                                            )
+                                        }
                                     },
                                     modifier = Modifier
                                         .weight(1f)

@@ -16,6 +16,9 @@ interface ChatDao {
     @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
     suspend fun getConversationById(conversationId: Long): ConversationEntity?
 
+    @Query("SELECT * FROM conversations WHERE partnerId = :partnerId AND type = 'DIRECT' LIMIT 1")
+    suspend fun getDirectConversationByPartnerId(partnerId: Long): ConversationEntity?
+
     @Query("UPDATE conversations SET lastMessage = :lastMessage, lastMessageTime = :lastMessageTime WHERE id = :conversationId")
     suspend fun updateConversationLastMessage(conversationId: Long, lastMessage: String?, lastMessageTime: String?)
 
@@ -44,4 +47,7 @@ interface ChatDao {
 
     @Query("DELETE FROM chat_messages WHERE id = :messageId")
     suspend fun deleteMessageById(messageId: Long)
+
+    @Query("DELETE FROM chat_messages")
+    suspend fun clearAllMessages()
 }

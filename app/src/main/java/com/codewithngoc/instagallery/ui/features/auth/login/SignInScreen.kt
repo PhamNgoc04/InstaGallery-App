@@ -244,12 +244,14 @@ fun SignInScreen(
                 Spacer(modifier = Modifier.width(5.dp))
 
                 TextButton(
-                    onClick = { }
+                    onClick = { },
+                    contentPadding = PaddingValues(0.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.register),
                         color = colorResource(R.color.orange_button_login),
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        softWrap = false
                     )
                 }
 

@@ -104,10 +104,7 @@ object AppModule {
         session: InstaGallerySession
     ): ProfileRepository = ProfileRepository(api, session)
 
-    @Provides
-    @Singleton
-    fun provideNotificationRepository(api: InstaGalleryApi): NotificationRepository =
-        NotificationRepository(api)
+    // NotificationRepository dùng @Inject @Singleton — Hilt tự inject, không cần @Provides ở đây
 
     @Provides
     @Singleton

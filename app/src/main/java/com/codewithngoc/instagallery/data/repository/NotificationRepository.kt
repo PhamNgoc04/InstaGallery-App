@@ -5,8 +5,11 @@ import com.codewithngoc.instagallery.data.model.NotificationResponse
 import com.codewithngoc.instagallery.data.model.PaginatedNotificationsResponse
 import com.codewithngoc.instagallery.data.model.UnreadCountResponse
 import com.codewithngoc.instagallery.data.model.ApiResponseWrapper
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class NotificationRepository(private val api: InstaGalleryApi) {
+@Singleton
+class NotificationRepository @Inject constructor(private val api: InstaGalleryApi) {
 
     suspend fun getNotifications(page: Int = 1, limit: Int = 20): Result<PaginatedNotificationsResponse> {
         return try {
